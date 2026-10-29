@@ -280,18 +280,16 @@ Im Image liefert `server/server.py` den Ordner `src/` auf Port 80 aus und speich
 So kommt es auf Unraid:
 
 1. Auf GitHub pushen. Unter **Actions** läuft der Build (ca. 1 Minute).
-2. Das Repository ist privat, damit ist auch das Image privat. Entweder das Image auf GitHub unter
-   **Packages → lokal-intranet-hub → Package settings** auf **Public** stellen (es enthält keine
-   Zugangsdaten), oder sich einmal im Unraid-Terminal anmelden:
-   `docker login ghcr.io -u eliasprey` (als Passwort ein GitHub-Token mit dem Recht `read:packages`).
+2. Ist das Image auf GitHub privat (**Packages → lokal-intranet-hub → Package settings**), sich einmal im
+   Unraid-Terminal anmelden: `docker login ghcr.io -u eliasprey` (als Passwort ein GitHub-Token mit dem Recht
+   `read:packages`). Steht es auf **Public**, entfällt das – es enthält keine Zugangsdaten.
 3. Die Vorlage `unraid/lokal-intranet-hub.xml` nach `/boot/config/plugins/dockerMan/templates-user/`
    kopieren (z. B. über die Netzwerkfreigabe `flash` → `config/plugins/dockerMan/templates-user/`).
 4. Im Docker-Tab **Container hinzufügen** → Vorlage **lokal-intranet-hub** wählen. Netzwerk ist schon
    **Custom: br0** mit der festen IP **192.168.178.50** (siehe „Feste IP-Adresse“ unten). Den Ordner
    **Daten** (Standard `/mnt/user/appdata/lokal-intranet-hub`) und optional Spotify Client-ID und
    Client-Secret eintragen → **Anwenden**. Die Seite ist dann unter **`http://192.168.178.50`** erreichbar.
-5. **Updates** kommen von selbst (siehe „Automatische Updates“ unten) – dafür einmal den
-   **GitHub-Token** eintragen.
+5. **Updates** kommen von selbst (siehe „Automatische Updates“ unten), eintragen muss man dafür nichts.
 
 ### Automatische Updates
 
@@ -316,18 +314,12 @@ Das ist der Zeitpunkt des Commits (Jahr.Monat.Tag · Uhrzeit), der Commit selbst
 von selbst, man muss nichts hochzählen. Mit Uhrzeit, weil oft mehrere Commits am selben Tag kommen. So sieht man
 z. B. am Wandtablet sofort, ob es schon den neuesten Stand hat.
 
-**GitHub-Token anlegen** (nötig, weil das Repository privat ist):
-
-1. Auf GitHub: **Settings → Developer settings → Personal access tokens → Fine-grained tokens →
-   Generate new token**.
-2. Name z. B. „Unraid Intranet“, Ablaufdatum wählen.
-3. **Repository access:** *Only select repositories* → **Lokal-Intranet-Hub**.
-4. **Permissions → Repository permissions → Contents: Read-only**. Mehr braucht es nicht.
-5. Token kopieren und in Unraid beim Container unter **GitHub-Token** eintragen → **Apply**.
+**Kein Token nötig:** Das Repository ist öffentlich, der Server holt die Updates ohne Anmeldung. GitHub erlaubt
+so 60 Anfragen pro Stunde je Internetanschluss – alle 15 Minuten nachsehen braucht davon 4.
 
 Im Docker-Log (Unraid: Container-Symbol → **Logs**) steht, was passiert, z. B.
-`Neue Version 3f2a1b9 von GitHub geladen – Server startet neu`. Steht dort `GitHub antwortet 404` oder
-`401`, fehlt der Token oder er ist abgelaufen.
+`Neue Version 3f2a1b9 von GitHub geladen – Server startet neu`. Steht dort `GitHub antwortet 404`, ist das
+Repository nicht (mehr) öffentlich oder `UPDATE_REPO` falsch; bei `403` oder `429` ist das Anfrage-Limit erreicht.
 
 Einstellungen (Container-Variablen): `UPDATE_MINUTEN` (Standard `15`, `0` schaltet die Updates ab),
 `UPDATE_REPO` (Standard `eliasprey/Lokal-Intranet-Hub`), `UPDATE_ZWEIG` (Standard `main`).

@@ -13,7 +13,6 @@ Einstellungen über Umgebungsvariablen (im Docker-Image schon gesetzt):
   UPDATE_REPO        GitHub-Repository für automatische Updates, z. B. eliasprey/Lokal-Intranet-Hub (leer = aus)
   UPDATE_ZWEIG       Zweig, der verfolgt wird (Standard main)
   UPDATE_MINUTEN     so oft nach Updates sehen (Standard 15, 0 = aus) – in der Seite unter Einstellungen änderbar
-  GITHUB_TOKEN       Lese-Token, nötig bei privatem Repository
   GITHUB_API         Adresse der GitHub-API (Standard https://api.github.com; zum Testen änderbar)
   SPOTIFY_ACCOUNTS, SPOTIFY_API  Adressen von Spotify (nur zum Testen ändern)
   KURS_API           Adresse von Yahoo Finance (Standard https://query1.finance.yahoo.com; nur zum Testen ändern)
@@ -33,8 +32,8 @@ Schnittstelle:
                             Mit "If-None-Match" kommt 304 zurück, solange sich nichts geändert hat.
   POST /api/aenderungen   ← [{ op, ... }, ...] – alle Änderungen eines Geräts, der Reihe nach (siehe aendern()).
                           → { version, abgelehnt: [...] } – ungültige Änderungen werden übersprungen.
-  GET  /api/version       → { version, datum, update: { aktiv, modus, minuten, uhr, repo, token, geprueft, neuester, fehler, laeuft, naechste } } – Commit des laufenden
-                            Codes und Ergebnis der letzten Update-Prüfung (zur Fehlersuche, ohne den Token selbst)
+  GET  /api/version       → { version, datum, update: { aktiv, modus, minuten, uhr, repo, geprueft, neuester, fehler, laeuft, naechste } } – Commit des laufenden
+                            Codes und Ergebnis der letzten Update-Prüfung (zur Fehlersuche)
   POST /api/update/jetzt  → sofort auf GitHub nach einer neuen Version sehen (Einstellungen: „Aktuellste Version ziehen“)
   POST /api/update/modus  ← { modus: 'minuten' | 'taeglich' | 'aus' } – wie oft von selbst nach Updates gesehen wird
   POST /api/sicherheit    ← { aktion: 'pruefen' | 'pin-an' | 'pin-aus' | 'sperren' | 'entsperren', pin, neu }
@@ -98,7 +97,6 @@ APP_DATUM = os.environ.get('APP_DATUM', '')
 UPDATE_REPO = os.environ.get('UPDATE_REPO', '').strip().strip('/')
 UPDATE_ZWEIG = os.environ.get('UPDATE_ZWEIG') or 'main'
 UPDATE_MINUTEN = float(os.environ.get('UPDATE_MINUTEN') or 15)
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '').strip()
 GITHUB_API = (os.environ.get('GITHUB_API') or 'https://api.github.com').rstrip('/')
 KURS_API = (os.environ.get('KURS_API') or 'https://query1.finance.yahoo.com').rstrip('/')
 
@@ -334,10 +332,9 @@ CODE = DATENBANK.parent / 'code'           # hier landen heruntergeladene Versio
 
 
 def github(pfad, accept):
+    """Das Repository ist öffentlich, ein Token ist nicht nötig (ohne Anmeldung erlaubt GitHub 60 Anfragen pro Stunde)."""
     anfrage = urllib.request.Request(f'{GITHUB_API}/repos/{UPDATE_REPO}/{pfad}', headers={
         'Accept': accept, 'User-Agent': 'Lokal-Intranet-Hub', 'X-GitHub-Api-Version': '2022-11-28'})
-    if GITHUB_TOKEN:
-        anfrage.add_header('Authorization', f'Bearer {GITHUB_TOKEN}')
     return urllib.request.urlopen(anfrage, timeout=60)
 
 
@@ -421,10 +418,10 @@ def naechste_pruefung(letzte):
 
 
 def update_info():
-    """Für /api/version und die Einstellungen (ohne den Token selbst)"""
+    """Für /api/version und die Einstellungen"""
     naechste = naechste_pruefung(update_stand['geprueft'] or START) if UPDATE_REPO else None
     return {'aktiv': bool(UPDATE_REPO), 'modus': update_modus(), 'minuten': UPDATE_MINUTEN if UPDATE_MINUTEN > 0 else 15,
-            'uhr': UPDATE_TAEGLICH_UHR, 'repo': UPDATE_REPO, 'token': bool(GITHUB_TOKEN), **update_stand,
+            'uhr': UPDATE_TAEGLICH_UHR, 'repo': UPDATE_REPO, **update_stand,
             'naechste': int(naechste) if naechste else None}
 
 
@@ -446,7 +443,8 @@ def update_schleife():
         try:
             auf_update_pruefen()
         except urllib.error.HTTPError as e:
-            hinweis = ' – bei privatem Repository GITHUB_TOKEN setzen bzw. prüfen' if e.code in (401, 403, 404) else ''
+            hinweis = {403: ' – Anfrage-Limit erreicht, später erneut', 404: ' – Repository nicht gefunden oder nicht öffentlich',
+                       429: ' – Anfrage-Limit erreicht, später erneut'}.get(e.code, '')
             update_stand['fehler'] = f'GitHub antwortet {e.code}{hinweis}'
         except Exception as e:
             update_stand['fehler'] = f'fehlgeschlagen: {e}'
