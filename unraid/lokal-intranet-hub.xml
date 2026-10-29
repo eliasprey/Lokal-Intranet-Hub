@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>lokal-intranet-hub</Name>
+  <Repository>ghcr.io/eliasprey/lokal-intranet-hub:latest</Repository>
+  <Registry>https://github.com/eliasprey/Lokal-Intranet-Hub/pkgs/container/lokal-intranet-hub</Registry>
+  <Network>br0</Network>
+  <MyIP>192.168.178.50</MyIP>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/eliasprey/Lokal-Intranet-Hub</Support>
+  <Project>https://github.com/eliasprey/Lokal-Intranet-Hub</Project>
+  <Overview>Startseite für Wandtablet und PC: Uhr, Kalender mit bayerischen Feiertagen, Termine, Notizen, Wetter, Spotify, Google Kalender, Aktiendepot und Shortcuts zu den Geräten im Heimnetz. Termine, Urlaube, Notizen und das Depot liegen in einer Datenbank im appdata-Ordner und sind auf allen Geräten gleich.</Overview>
+  <Category>Productivity: HomeAutomation:</Category>
+  <WebUI>http://[IP]:[PORT:80]/</WebUI>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <Config Name="Web-Port" Target="80" Default="8080" Mode="tcp" Description="Nur bei Netzwerk-Typ bridge: Port, unter dem die Startseite erreichbar ist (http://SERVER-IP:PORT). Mit eigener IP (br0) läuft die Seite direkt auf Port 80: http://192.168.178.50" Type="Port" Display="always" Required="false" Mask="false">8080</Config>
+  <Config Name="Daten" Target="/data" Default="/mnt/user/appdata/lokal-intranet-hub" Mode="rw" Description="Ordner für die Datenbank (Termine, Urlaube, Notizen, Depot). Mit ins Backup nehmen." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/lokal-intranet-hub</Config>
+  <Config Name="GitHub-Token" Target="GITHUB_TOKEN" Default="" Mode="" Description="Für automatische Updates aus dem privaten GitHub-Repository: Fine-grained Token mit Lesezugriff (Contents: Read-only) nur auf Lokal-Intranet-Hub (siehe README)." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Update-Intervall (Minuten)" Target="UPDATE_MINUTEN" Default="15" Mode="" Description="So oft sieht der Server auf GitHub nach neuen Commits und übernimmt sie. 0 = keine automatischen Updates." Type="Variable" Display="always" Required="false" Mask="false">15</Config>
+  <Config Name="Update-Repository" Target="UPDATE_REPO" Default="eliasprey/Lokal-Intranet-Hub" Mode="" Description="GitHub-Repository (besitzer/name), aus dem Updates kommen." Type="Variable" Display="advanced" Required="false" Mask="false">eliasprey/Lokal-Intranet-Hub</Config>
+  <Config Name="Spotify Client-ID" Target="SPOTIFY_CLIENT_ID" Default="" Mode="" Description="Optional. Client-ID der eigenen Spotify-App (siehe README). Leer lassen, wenn Spotify nicht genutzt wird." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Spotify Client-Secret" Target="SPOTIFY_CLIENT_SECRET" Default="" Mode="" Description="Client-Secret derselben Spotify-App (im Spotify-Dashboard unter Settings → View client secret). Bleibt auf dem Server." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Spotify Redirect URI" Target="SPOTIFY_REDIRECT" Default="http://127.0.0.1:8888/callback" Mode="" Description="Muss genau so im Spotify-Dashboard als Redirect URI eingetragen sein." Type="Variable" Display="advanced" Required="false" Mask="false">http://127.0.0.1:8888/callback</Config>
+</Container>

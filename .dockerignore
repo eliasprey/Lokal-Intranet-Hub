@@ -1,0 +1,5 @@
+# Ins Image kommen nur src/ und server/
+*
+!src/
+!server/
+**/*:Zone.Identifier

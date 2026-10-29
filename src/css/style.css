@@ -1,0 +1,694 @@
+:root {
+  --bg: #0a0f1a;                     /* Seitenhintergrund */
+  --karte: #111a2b;                  /* Karten */
+  --karte-hell: #18233a;             /* Zeilen und Felder in Karten */
+  --bronze: #cd7f32;                 /* Rahmen und Begrüßung */
+  --rand: rgba(205, 127, 50, 0.4);
+  --rand-hell: rgba(205, 127, 50, 0.75);   /* Rahmen bei Hover und aktiv */
+  --text: #e6ebf3;
+  --muted: #8b97ab;
+  --accent: #3b82f6;                 /* Blau: aktives Menü, Ring, Diagramm */
+  --accent-hell: #60a5fa;
+  --accent-weich: rgba(59, 130, 246, 0.15);
+  --termin: #f5b54a;
+  --urlaub: #38bdf8;
+  --feiertag: #f87171;
+  --google: #a78bfa;                 /* Termine aus Google Kalender */
+  --sonne: #fbbf24;
+  --plus: #34d399;                   /* Kurs gestiegen (immer mit + davor) */
+  --minus: #f87171;                  /* Kurs gefallen (immer mit − davor) */
+  --theme: #ffe680;                  /* Punkt vor der Jahreszeit */
+}
+body[data-jahreszeit="fruehling"] { --theme: #b4f08c; }   /* Hellgrün */
+body[data-jahreszeit="sommer"]    { --theme: #ffe680; }   /* Helles Gelb */
+body[data-jahreszeit="herbst"]    { --theme: #ffb870; }   /* Helles Orange */
+body[data-jahreszeit="winter"]    { --theme: #a8e4ff; }   /* Eisblau */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif; font-size: 14px;
+  color: var(--text); overflow: hidden;
+  background: radial-gradient(1100px 600px at 75% -15%, rgba(59,130,246,.09), transparent 60%), var(--bg);
+}
+h1, h2, h3 { font-weight: 600; }
+h3 { font-size: 16px; }
+ul { list-style: none; }
+[hidden] { display: none !important; }
+
+button { font: inherit; color: var(--text); background: var(--karte-hell); border: 1px solid var(--rand);
+  border-radius: 10px; padding: 7px 12px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) { button:hover { border-color: var(--rand-hell); } }
+button:active { background: #213052; }
+button.on { background: var(--accent-weich); border-color: var(--rand-hell); }
+button:disabled { opacity: .4; cursor: default; }
+input, select, textarea { font: inherit; color: var(--text); background: var(--karte-hell); border: 1px solid var(--rand);
+  border-radius: 10px; padding: 7px 10px; min-width: 0; outline: none; color-scheme: dark; }
+input:focus, select:focus, textarea:focus { border-color: var(--bronze); }
+::placeholder { color: var(--muted); }
+input[type=range] { accent-color: var(--accent); padding: 0; border: none; background: none; }
+
+.w-icon { display: block; }
+.w-icon svg { display: block; width: 100%; height: 100%; }
+
+/* ================= Grundgerüst: Seitenleiste + Hauptbereich ================= */
+.app { display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 100%; }
+
+.leiste { display: flex; flex-direction: column; gap: 30px; padding: 22px 16px; min-height: 0;
+  border-right: 1px solid var(--rand); background: rgba(8, 12, 22, .55); }
+.logo { display: flex; align-items: center; gap: 11px; padding: 0 6px; }
+.logo b { display: block; font-size: 15px; letter-spacing: 1.6px; }
+.logo small { display: block; font-size: 12px; color: var(--muted); }
+.menue { display: flex; flex-direction: column; gap: 6px; }
+.menue button { display: flex; align-items: center; gap: 16px; padding: 12px 16px; text-align: left;
+  font-size: 28px; font-weight: 500; color: var(--muted); background: none; border-color: transparent; }
+.menue button svg { flex: none; width: 34px; height: 34px; }
+.menue button.on { color: var(--text); background: var(--accent-weich); border-color: var(--rand-hell); }
+.menue button.on svg { color: var(--accent-hell); }
+/* Unten: Version (klein) über dem Knopf Einstellungen – so groß wie ein Menü-Reiter, aber umrandet */
+.leiste-unten { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.app-version { padding: 0 6px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.app-version span + span::before { content: " · "; }
+.einstellungen-btn { display: flex; align-items: center; gap: 16px; padding: 12px 16px; font-size: 28px;
+  font-weight: 500; color: var(--muted); background: none; border-color: var(--rand); text-align: left; }
+.einstellungen-btn svg { flex: none; width: 34px; height: 34px; }
+@media (hover: hover) { .einstellungen-btn:hover { color: var(--text); background: var(--karte-hell); } }
+
+.haupt { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 18px 24px 20px; }
+
+/* Kopf */
+/* Begrüßung so breit wie nötig (große Schrift); wird es eng, gibt zuerst die Suche nach */
+.kopf { display: flex; align-items: center; gap: 24px; }
+.kopf-gruss { flex: none; min-width: 0; max-width: calc(100% - 380px); }   /* Platz für Suche (mind. 200 px) und Pfeile */
+.kopf > .suche { flex: 0 100 440px; min-width: 200px; margin-inline: auto; }
+.kopf-rechts { flex: none; }
+.kopf h1 { font-size: 48px; line-height: 1.1; color: var(--bronze); display: flex; align-items: center; gap: 16px; white-space: nowrap; }
+#gruss { overflow: hidden; text-overflow: ellipsis; }
+.gruss-icon { flex: none; width: 54px; height: 54px; color: var(--sonne); }
+.kopf p { margin-top: 4px; font-size: 26px; color: var(--bronze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.suche { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 8px 0 14px; border-radius: 12px;
+  background: var(--karte); border: 1px solid var(--rand); }
+.suche:focus-within { border-color: var(--bronze); }
+.suche .lupe { flex: none; width: 18px; height: 18px; color: var(--muted); }
+.suche input { flex: 1; height: 100%; padding: 0; border: none; background: none; font-size: 14px; }
+.suche input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }   /* eigenes X statt dem des Browsers */
+.suche .leeren { flex: none; width: 30px; height: 30px; min-height: 0; padding: 0; display: grid; place-items: center;
+  background: none; border-color: transparent; color: var(--muted); }
+.suche .leeren svg { width: 16px; height: 16px; }
+kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 2px 8px; border-radius: 6px;
+  background: var(--karte-hell); border: 1px solid var(--rand); }
+.kopf-rechts { display: flex; align-items: center; justify-content: flex-end; gap: 18px; }
+/* Abgleich mit der Datenbank: grün = gespeichert, gelb = Server nicht erreichbar, grau = nur auf diesem Gerät */
+.sync { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.sync svg { flex: none; width: 20px; height: 20px; color: #34d399; }
+.sync[data-zustand="offline"] svg { color: var(--sonne); }
+.sync[data-zustand="lokal"] svg, .sync[data-zustand="verbinde"] svg { color: var(--muted); }
+.blaettern { display: flex; gap: 6px; }
+.pfeil { width: 42px; height: 42px; min-height: 0; padding: 0; display: grid; place-items: center; }
+.pfeil svg { width: 20px; height: 20px; }
+
+/* Seiten nebeneinander (Finanzen | Kalender | Dashboard | Shortcuts | Smarthome); seiten.js setzt --seiten und schiebt die Leiste */
+.ansicht { flex: 1; min-height: 0; overflow: hidden; overflow: clip; }   /* clip: auch der Browser darf nicht seitlich scrollen (z. B. beim Fokus auf ein Feld) */
+.seiten { --seiten: 5; display: flex; width: calc(var(--seiten) * 100%); height: 100%; transition: transform .45s cubic-bezier(.22, .61, .36, 1); }
+.seite { flex: none; width: calc(100% / var(--seiten)); height: 100%; overflow-x: hidden; overflow-y: auto; padding: 0 2px 2px;
+  touch-action: pan-y; }               /* waagerechtes Wischen = Seite wechseln (seiten.js) */
+
+/* Karten */
+.karte { min-width: 0; background: var(--karte); border: 1px solid var(--rand); border-radius: 18px; padding: 16px 18px; }
+.karte-kopf { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.karte-kopf small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12px;
+  font-weight: 500; white-space: nowrap; background: rgba(15,23,42,.72); border: 1px solid var(--rand); }
+.chip.jz::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--theme); }
+.empty { color: var(--muted); font-size: 13px; padding: 4px 2px; }
+
+/* ================= Dashboard ================= */
+/* Mitte : unten = 3,3 : 1,7 – das Bild ist so hoch wie gewünscht (zuletzt +10 % nach unten) */
+.dash { display: grid; grid-template-rows: auto minmax(190px, 3.3fr) minmax(176px, 1.7fr) auto; gap: 14px; }
+
+/* Kacheln oben */
+.kacheln { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.kachel { min-width: 0; display: flex; align-items: center; gap: 14px; padding: 18px 20px; border-radius: 16px;
+  background: var(--karte); border: 1px solid var(--rand); }
+.kachel > div { min-width: 0; }
+.k-icon { flex: none; width: 52px; height: 52px; padding: 12px; border-radius: 14px; display: grid; place-items: center;
+  color: var(--k, var(--accent-hell)); background: color-mix(in srgb, var(--k, var(--accent-hell)) 15%, transparent); }
+.k-icon svg { width: 100%; height: 100%; }
+.kachel:nth-child(1) { --k: #fbbf24; }
+.kachel:nth-child(2) { --k: #fb923c; }
+.kachel:nth-child(3) { --k: #2dd4bf; }
+.kachel:nth-child(4) { --k: #60a5fa; }
+.kachel:nth-child(5) { --k: #a78bfa; }
+.kachel small { display: block; font-size: 13px; color: var(--muted); }
+.kachel b { display: block; font-size: 27px; font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kachel div span { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Mitte: Haus-Bild + Spotify; das Bild nimmt 4,4/9 der Breite */
+.dash-mitte { min-height: 0; display: grid; grid-template-columns: minmax(0, 4.4fr) minmax(280px, 4.6fr); gap: 14px; }
+.dash-mitte > .spotify { min-height: 0; display: flex; flex-direction: column; }
+.anstehend-karte { min-height: 0; display: flex; flex-direction: column; }
+.zuhause { position: relative; overflow: hidden; padding: 0; min-height: 190px; }
+.zuhause .bg { position: absolute; inset: 0; opacity: 0; transition: opacity 3s ease; }
+.zuhause .bg.active { opacity: 1; }
+.zuhause .bg .main { position: absolute; inset: 0; background-size: cover; background-position: center 58%; }
+.zuhause::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(10,15,26,.7) 0%, rgba(10,15,26,0) 32%, rgba(10,15,26,0) 62%, rgba(10,15,26,.75) 100%); }
+.zuhause-kopf { position: relative; z-index: 1; display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+  padding: 16px 18px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+.zuhause-kopf small { display: flex; align-items: center; gap: 18px; font-size: 36px; }
+.zuhause-kopf small::before { content: ""; width: 21px; height: 21px; border-radius: 50%; background: #34d399; box-shadow: 0 0 24px #34d399; }
+.zuhause-chips { position: absolute; z-index: 1; left: 18px; bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+.zuhause-sonne { position: absolute; z-index: 1; right: 18px; bottom: 16px; display: flex; gap: 8px; }   /* Sonnenauf- und -untergang */
+.zuhause-sonne .chip { font-variant-numeric: tabular-nums; }
+.zuhause-sonne svg { flex: none; width: 16px; height: 16px; color: var(--sonne); }
+
+/* ================= Shortcuts ================= */
+.netz { display: flex; }
+.geraete-karte { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 20px 22px; }
+.geraete-karte h2 { font-size: 22px; }
+.geraete-karte .karte-kopf { margin-bottom: 18px; }
+.geraete-karte .karte-kopf small { font-size: 13px; }
+.geraete-liste { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+  align-content: start; gap: 20px; }
+.geraet { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 21px; padding: 30px; min-height: 225px;
+  border-radius: 24px; text-decoration: none; color: var(--text); background: var(--karte-hell); border: 1px solid transparent;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+@media (hover: hover) { .geraet:hover { border-color: var(--rand-hell); } }
+.geraet:active { background: #213052; }
+.g-icon { flex: none; width: 84px; height: 84px; padding: 20px; border-radius: 21px; color: var(--accent-hell); background: var(--accent-weich); }
+.g-icon svg, .g-pfeil svg { display: block; width: 100%; height: 100%; }
+.g-text { min-width: 0; max-width: 100%; margin-top: auto; }
+.g-text b, .g-text small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g-text b { font-size: 27px; font-weight: 600; }
+.g-text small { margin-top: 3px; font-size: 21px; color: var(--muted); }
+.g-pfeil { position: absolute; top: 30px; right: 30px; width: 30px; height: 30px; color: var(--muted); }
+.geraete-liste.bearbeiten .geraet { border-color: var(--rand-hell); border-style: dashed; }
+.geraete-liste.bearbeiten .g-pfeil { color: var(--accent-hell); }
+.geraete-liste > .empty { grid-column: 1 / -1; }
+.sc-knoepfe { flex: none; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.sc-knoepfe button { padding: 10px 16px; }
+.sc-knoepfe .primary { color: #fff; background: var(--accent); border-color: transparent; }
+
+/* ================= Smarthome ================= */
+.smarthome { display: flex; }
+.smarthome-karte { flex: 1; min-width: 0; padding: 20px 22px; }
+.smarthome-karte h2 { font-size: 22px; }
+.smarthome-karte .leer { margin-top: 18px; font-size: 15px; color: var(--muted); }
+
+/* Unten: Wetter, Uhr, Anstehend */
+.dash-unten { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
+.dash-unten > .karte { display: flex; flex-direction: column; min-height: 0; }
+
+/* Wetter: Spannweite Tiefst–Höchst je Tag als Balken */
+.wetter-karte { container-type: inline-size; }
+.wetter-karte .karte-kopf { flex-wrap: wrap; row-gap: 2px; }   /* schmal: „DWD · Stand“ rutscht unter den Titel */
+.wetter-karte h3 { white-space: nowrap; }
+.wetter-tage { flex: 1; min-height: 100px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.w-tag { min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 6px; border-radius: 12px;
+  font-size: 14px; font-variant-numeric: tabular-nums; }
+.w-tag.heute { background: var(--karte-hell); }
+.w-tag > small { font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+.w-tag.heute > small { color: var(--accent-hell); }
+.w-tag .w-icon { width: 30px; height: 30px; color: var(--text); }
+.w-spur { position: relative; flex: 1; width: 100%; min-height: 40px; margin: 20px 0; }
+.w-balken { position: absolute; left: 50%; width: 10px; margin-left: -5px; min-height: 8px; border-radius: 4px; background: var(--accent-hell); }
+.w-wert { position: absolute; left: 0; right: 0; text-align: center; font-weight: 600; line-height: 18px; }
+.w-wert.min { color: var(--muted); font-weight: 500; }
+.w-tag .regen { display: flex; align-items: center; gap: 3px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.w-tag .regen svg { width: 10px; height: 10px; color: var(--urlaub); }
+@container (max-width: 400px) { .w-tag .regen svg { display: none; } }   /* schmale Karte: 7 Spalten, nur die Zahl */
+
+/* Uhr: Stunden, Minuten und Sekunden in einer Zeile, jede Ziffer rollt beim Wechsel */
+.uhr-karte { align-items: stretch; }
+.uhr-mitte { flex: 1; min-height: 96px; display: grid; place-items: center; }
+.uhr-zeit { display: flex; align-items: baseline; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.uhr-zeit b { font-size: 92px; font-weight: 600; }
+.uhr-zeit #sek { margin-left: 4px; font-size: 52px; font-weight: 500; color: var(--muted); }
+.ziffer { display: inline-grid; overflow: hidden; }
+.ziffer > span { grid-area: 1 / 1; }
+.ziffer > .rein { animation: ziffer-rein .4s cubic-bezier(.2, .8, .3, 1); }
+.ziffer > .raus { animation: ziffer-raus .4s cubic-bezier(.5, 0, .8, .4) forwards; }
+@keyframes ziffer-rein { from { transform: translateY(100%); opacity: 0; } }
+@keyframes ziffer-raus { to { transform: translateY(-100%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ziffer > .rein { animation: none; }
+  .ziffer > .raus { display: none; }
+}
+.uhr-chips { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+.uhr-chips .chip { background: var(--karte-hell); }
+
+/* Anstehend: die nächsten Einträge */
+#anstehend { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.a-zeile { flex: none; display: flex; align-items: center; gap: 12px; padding: 11px 12px 11px 0; border-radius: 12px;
+  background: var(--karte-hell); overflow: hidden; }
+.a-zeile::before { content: ""; align-self: stretch; width: 4px; margin: -11px 0; background: var(--termin); }
+.a-zeile.f::before { background: var(--feiertag); }
+.a-zeile.u::before { background: var(--urlaub); }
+.a-zeile.g::before { background: var(--google); }
+.a-text { flex: 1; min-width: 0; }
+.a-text b, .a-text small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a-text b { font-size: 15px; font-weight: 500; }
+.a-text small { font-size: 13px; color: var(--muted); }
+.pille { flex: none; font-size: 12px; font-weight: 500; padding: 3px 9px; border-radius: 999px;
+  color: var(--termin); background: rgba(245,181,74,.13); }
+.a-zeile.f .pille { color: var(--feiertag); background: rgba(248,113,113,.13); }
+.a-zeile.u .pille { color: var(--urlaub); background: rgba(56,189,248,.13); }
+.a-zeile.g .pille { color: var(--google); background: rgba(167,139,250,.13); }
+
+/* Spotify */
+.spotify .karte-kopf button { font-size: 12px; padding: 3px 10px; }
+#spLogin { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+.sp-hinweis { font-size: 13px; line-height: 1.45; color: var(--muted); overflow-wrap: anywhere; overflow-y: auto; min-height: 0; }
+.sp-schritte { display: flex; flex-direction: column; gap: 10px; }
+.sp-anmelden { display: block; padding: 11px 16px; border-radius: 10px; text-align: center; text-decoration: none; font-weight: 500;
+  color: #fff; background: #1db954; -webkit-tap-highlight-color: transparent; }
+.sp-anmelden:active { background: #17a34a; }
+.sp-code { display: flex; gap: 8px; }
+.sp-code input { flex: 1; }
+.sp-code button { flex: none; color: #fff; background: var(--accent); border-color: transparent; }
+#spPlayer { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+/* Oben: links das Cover, so groß wie der Platz erlaubt (Höhe des Bereichs, höchstens 45 % der Breite) –
+   rechts Titel und darunter die laufende Playlist zum Durchscrollen */
+.spotify { container-type: inline-size; }
+.sp-oben { flex: 1; min-height: 0; display: flex; gap: 20px; container-type: size; }
+.sp-cover { flex: none; width: min(100cqh, 45cqw); height: min(100cqh, 45cqw); border-radius: 14px; object-fit: cover;
+  background: var(--karte-hell); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.sp-rechts { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.sp-titel { flex: none; min-width: 0; }
+.sp-titel b, .sp-titel small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-titel b { font-size: 28px; font-weight: 600; line-height: 1.2; }
+.sp-titel small { margin-top: 3px; font-size: 18px; color: var(--muted); }
+.sp-playlist { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 10px 6px 6px 10px;
+  border-radius: 14px; background: var(--karte-hell); }
+.sp-playlist-kopf { flex: none; display: flex; align-items: baseline; gap: 10px; padding: 0 6px 8px 4px; }
+.sp-playlist-kopf b { min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-playlist-kopf small { flex: none; margin-left: auto; font-size: 12px; color: var(--muted); }
+.sp-playlist-liste { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px; }
+.sp-zeile { flex: none; display: grid; grid-template-columns: 26px 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%;
+  min-height: 0; padding: 6px 8px; border-radius: 10px; border-color: transparent; background: none; text-align: left; }
+button.sp-zeile:active { background: #213052; }
+@media (hover: hover) { button.sp-zeile:hover { background: rgba(148,163,184,.08); border-color: transparent; } }
+.sp-zeile.on { background: var(--accent-weich); }
+.sp-zeile.on b, .sp-zeile.on .sp-nr { color: var(--accent-hell); }
+.sp-nr { font-size: 13px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.sp-zeile img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--karte); }
+.sp-zeile b, .sp-zeile small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-zeile b { font-size: 15px; font-weight: 500; }
+.sp-zeile small { font-size: 13px; color: var(--muted); }
+.sp-dauer { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@container (max-height: 170px) {         /* niedrige Karte (z. B. Tablet quer): Platz für Cover und Titel statt Liste */
+  .sp-playlist { display: none; }
+  .sp-rechts { justify-content: center; }
+}
+
+/* Unten: Bedienung, groß genug fürs Wandtablet */
+.sp-zeit { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp-zeit input { flex: 1; }
+.sp-knoepfe { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.sp-knoepfe button { width: 62px; height: 62px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-items: center; }
+.sp-knoepfe .sp-play { width: 80px; height: 80px; color: #fff; background: var(--accent); border-color: transparent; }
+.sp-knoepfe svg { width: 24px; height: 24px; }
+.sp-knoepfe .sp-play svg { width: 30px; height: 30px; }
+.sp-knoepfe .sp-musik { width: auto; height: 62px; padding: 0 24px; border-radius: 999px; display: flex; gap: 10px; font-size: 17px; }
+.sp-knoepfe .sp-musik svg { width: 20px; height: 20px; }
+.sp-unten { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; margin-left: 10px; }
+.sp-unten select { flex: 1; min-width: 0; font-size: 16px; padding: 12px 14px; }
+.sp-unten input { flex: 1; min-width: 80px; }
+@container (max-width: 500px) {         /* schmale Karte: Gerät und Lautstärke in eine eigene Zeile */
+  .sp-unten { order: 1; flex-basis: 100%; margin-left: 0; }
+  .sp-knoepfe .sp-musik { margin-left: auto; }
+}
+/* Schieberegler: dicke Spur, großer Knopf, links vom Knopf farbig (--wert setzt spotify.js) */
+.spotify input[type=range] { -webkit-appearance: none; appearance: none; height: 32px; margin: 0; background: none; cursor: pointer; }
+.spotify input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 999px;
+  background: linear-gradient(var(--accent), var(--accent)) 0 / var(--wert, 0%) 100% no-repeat, #2a3a5c; }
+.spotify input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -8px; border-radius: 50%;
+  background: #fff; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.spotify input[type=range]::-moz-range-track { height: 8px; border-radius: 999px; background: #2a3a5c; }
+.spotify input[type=range]::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--accent); }
+.spotify input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: none; }
+.spotify input[type=range]:disabled { opacity: .5; cursor: default; }
+.sp-meldung { margin-top: 6px; font-size: 12px; color: var(--feiertag); }
+.sp-meldung:empty { display: none; }
+
+/* Fußzeile: Notiz direkt eintippen */
+.fusszeile { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 18px; border-radius: 16px; cursor: text; }
+.fusszeile svg { flex: none; width: 20px; height: 20px; color: var(--sonne); }
+.notiz-titel { position: relative; flex: none; width: 76px; }
+.notiz-titel b { font-size: 14px; }
+#notizText { flex: 1; min-width: 0; resize: none; overflow-y: auto; font-size: 15px; line-height: 1.45; padding: 10px 14px; border-radius: 10px; }
+#notizStatus { position: absolute; left: 0; top: 100%; margin-top: 2px; color: var(--muted); font-size: 11px; opacity: 0; transition: opacity .4s; }
+#notizStatus.on { opacity: 1; }
+
+/* ================= Kalender ================= */
+.kal { display: flex; }
+#calPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 20px 22px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.cal-head h2 { font-size: 22px; }
+.nav { display: flex; gap: 6px; }
+.nav button { min-width: 40px; }
+.grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 2.4em repeat(7, minmax(0, 1fr));
+  grid-template-rows: auto repeat(6, minmax(0, 1fr)); gap: 6px; }
+.kw { display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.kw.jetzt { color: var(--accent-hell); font-weight: 700; }
+.dow { text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 0; text-transform: uppercase; letter-spacing: 1px; }
+.day { position: relative; min-height: 0; display: flex; flex-direction: column; padding: 8px 10px; border-radius: 12px;
+  font-size: 16px; font-weight: 500; cursor: pointer; overflow: hidden; -webkit-user-select: none; user-select: none;
+  background: var(--karte-hell); border: 1px solid transparent; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) { .day:hover { border-color: var(--rand-hell); } }
+.day:active { background: #213052; }
+.day.other { opacity: .35; }
+.day.feiertag { color: var(--feiertag); background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.4); }
+.day.urlaub::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--urlaub); }
+.day.today { border-color: var(--bronze); background: var(--accent-weich); font-weight: 700; }
+.day.sel { outline: 2px solid var(--termin); outline-offset: -2px; background: rgba(245,181,74,.16); }
+.day .dot { display: none; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); gap: 3px; }
+.day .dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--termin); display: block; }
+.day .dot i.g { background: var(--google); }
+.day .ft-name { display: none; margin-top: 1px; font-size: 9px; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lbls { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-top: 4px; }
+.lbl { font-size: 12px; font-weight: 400; padding: 1px 6px; border-radius: 5px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; color: var(--text); background: rgba(245,181,74,.25); }
+.lbl.f { background: rgba(248,113,113,.3); }
+.lbl.u { background: rgba(56,189,248,.28); }
+.lbl.g { background: rgba(167,139,250,.3); }
+.lbl.m { background: none; color: var(--muted); }
+.legende { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.legende span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.legende .l-f::before { background: var(--feiertag); }
+.legende .l-u::before { background: var(--urlaub); }
+.legende .l-t::before { background: var(--termin); }
+.legende .l-g::before { background: var(--google); }
+.mehrfach { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rand); }
+.mehrfach #selCount { flex: 1 1 180px; font-size: 13px; color: var(--muted); }   /* Hinweis bricht um, die Knöpfe bleiben in einer Reihe */
+.mehrfach input[type=text] { width: 260px; max-width: 100%; }
+.mehrfach .primary { color: #fff; background: var(--accent); border-color: transparent; }
+.mehrfach .loeschen:not(:disabled) { color: var(--feiertag); border-color: rgba(248,113,113,.45); }
+
+/* ================= Finanzen ================= */
+.fin { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr); gap: 14px; }
+.fin-links { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+.plus { color: var(--plus); }
+.minus { color: var(--minus); }
+.warnung { color: var(--sonne); }
+.karte-kopf small.warnung { color: var(--sonne); }
+
+/* Summe des Depots */
+.ds-zahlen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.ds-zahlen small { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.ds-zahlen b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#depotGewinnProz.leer { color: var(--muted); font-weight: 400; font-size: 13px; }
+#depotGewinnProz { display: block; margin-top: 2px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Diagramm (diagramm.js) */
+.chart-karte { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.chart-kopf { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin-bottom: 10px; }
+.chart-titel { min-width: 0; }
+.chart-titel h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chart-titel small { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chart-titel small.plus { color: var(--plus); }
+.chart-titel small.minus { color: var(--minus); }
+.zeitraeume { display: flex; flex-wrap: wrap; gap: 2px; }
+.zeitraeume button { min-height: 0; padding: 5px 9px; font-size: 13px; color: var(--muted); background: none; border-color: transparent;
+  border-radius: 8px; }
+.zeitraeume button.on { color: var(--text); background: var(--accent-weich); border-color: var(--rand-hell); }
+.chart { position: relative; flex: 1; min-height: 200px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.chart-svg { position: absolute; inset: 0; display: block; overflow: visible; }
+.chart-raster { stroke: var(--rand); stroke-width: 1; }
+.chart-raster.senkrecht { stroke-dasharray: 2 4; }
+.chart-grundlinie { stroke: rgba(148,163,184,.3); stroke-width: 1; }
+.chart-achse { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart-linie { fill: none; stroke: var(--accent-hell); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-stop-oben { stop-color: var(--accent); stop-opacity: .38; }
+.chart-stop-unten { stop-color: var(--accent); stop-opacity: 0; }
+.chart-zeiger line { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-zeiger circle { fill: var(--accent-hell); stroke: var(--karte); stroke-width: 2; }
+.chart-tip { position: absolute; z-index: 1; pointer-events: none; padding: 6px 10px; border-radius: 10px; white-space: nowrap;
+  background: #0b1222; border: 1px solid var(--rand); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.chart-tip b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
+.chart-tip small { display: block; font-size: 12px; color: var(--muted); }
+.chart-meldung { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center; font-size: 14px;
+  color: var(--muted); pointer-events: none; }
+
+/* Rechts: Reiter Hinzufügen | Assets */
+.fin-rechts { min-height: 0; display: flex; flex-direction: column; }
+.fin-tabs { flex: none; margin: 0 0 14px; }
+.fin-tabs button { flex: 1; font-weight: 500; }
+.fin-tabs small { margin-left: 4px; font-size: 12px; color: var(--muted); }
+.fin-reiter { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.fin-reiter[hidden] { display: none; }
+
+/* Assets: Gesamt und jede Position, antippen = links anzeigen */
+.depot-liste { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; container-type: inline-size; }
+.pos { flex: none; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .9fr) minmax(0, 1.2fr) auto; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 14px; background: var(--karte-hell); border: 1px solid transparent; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; }
+.pos.gesamt { grid-template-columns: minmax(0, 1fr) auto; }
+.pos.on { border-color: var(--bronze); background: var(--accent-weich); }
+@media (hover: hover) { .pos:not(.on):hover { border-color: var(--rand-hell); } }
+.pos b, .pos small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos b { font-size: 15px; font-weight: 600; }
+.pos small { margin-top: 1px; font-size: 12px; color: var(--muted); }
+.pos small.plus { color: var(--plus); }
+.pos small.minus { color: var(--minus); }
+.pos small.warnung { color: var(--sonne); }
+.pos-kurs, .pos-wert { text-align: right; font-variant-numeric: tabular-nums; }
+.pos-kurs b { color: var(--accent-hell); }
+.pos-kurs b.auf { animation: kurs-auf 1.4s ease-out; }       /* Kurs gestiegen: kurz grün */
+.pos-kurs b.ab { animation: kurs-ab 1.4s ease-out; }         /* Kurs gefallen: kurz rot */
+@keyframes kurs-auf { from { color: var(--plus); } }
+@keyframes kurs-ab { from { color: var(--minus); } }
+.pos-knoepfe { display: flex; gap: 4px; }
+.pos-knoepfe button { width: 34px; height: 34px; min-height: 0; padding: 0; display: grid; place-items: center; color: var(--muted); }
+.pos-knoepfe svg { width: 16px; height: 16px; }
+@media (hover: hover) { .pos-knoepfe .weg:hover { color: var(--minus); border-color: rgba(248,113,113,.5); } }
+@container (max-width: 420px) {        /* schmale Spalte: Kurs weglassen (steht im Tooltip und links im Diagramm) */
+  .pos { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto; gap: 10px; }
+  .pos-kurs { display: none; }
+}
+
+/* Suchen und hinzufügen */
+.fin-rechts .suche { flex: none; background: var(--karte-hell); }
+.fin-rechts .suche .los { flex: none; padding: 6px 14px; color: #fff; background: var(--accent); border-color: transparent; }
+.fin-treffer { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.treffer { flex: none; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 12px; text-align: left; }
+.treffer > span:first-child { flex: 1; min-width: 0; }
+.treffer b, .treffer small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.treffer b { font-size: 15px; font-weight: 500; }
+.treffer small { font-size: 12px; color: var(--muted); }
+.treffer .pille { color: var(--accent-hell); background: var(--accent-weich); }
+.treffer .pille.krypto { color: var(--sonne); background: rgba(251,191,36,.13); }
+.fin-treffer .empty { line-height: 1.5; }
+.fin-form { display: flex; flex-direction: column; gap: 14px; }
+.fin-form[hidden] { display: none; }
+.fin-gewaehlt { padding: 14px 16px; border-radius: 14px; background: var(--karte-hell); }
+.fin-gewaehlt b { display: block; font-size: 17px; }
+.fin-gewaehlt small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.fin-kurs { margin-top: 10px; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fin-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.fin-form label small { font-size: 12px; }
+.fin-form input { padding: 10px 12px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.fin-fehler { font-size: 13px; color: var(--minus); }
+.fin-fehler:empty { display: none; }
+.fin-knoepfe { display: flex; justify-content: flex-end; gap: 8px; }
+.fin-knoepfe .primary { color: #fff; background: var(--accent); border-color: transparent; }
+
+/* ================= Fenster „Musik“ ================= */
+.tabs { display: flex; gap: 6px; margin: 10px 0; }
+.fenster { width: min(92vw, 620px); height: min(85vh, 680px); margin: auto; padding: 22px; color: var(--text);
+  background: var(--karte); border: 1px solid var(--rand); border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+.fenster[open] { display: flex; flex-direction: column; }
+.fenster::backdrop { background: rgba(3,6,12,.65); backdrop-filter: blur(4px); }
+.fenster-kopf { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.fenster-kopf h3 { font-size: 20px; }
+.fenster .suche { flex: none; margin-bottom: 4px; background: var(--karte-hell); }
+.fenster .suche .los { flex: none; padding: 6px 14px; color: #fff; background: var(--accent); border-color: transparent; }
+.fenster-liste { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.sp-treffer { flex: none; display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 12px; text-align: left; }
+.sp-treffer img { flex: none; width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: var(--karte); }
+.sp-treffer span { min-width: 0; }
+.sp-treffer b, .sp-treffer small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-treffer b { font-size: 15px; font-weight: 500; }
+.sp-treffer small { font-size: 13px; color: var(--muted); }
+.sp-mehr { flex: none; padding: 10px; }
+
+/* ================= Fenster „Einstellungen“ ================= */
+.fenster.einstellungen { height: fit-content; max-height: min(85vh, 720px); overflow-y: auto; }
+.es-tabs { flex: none; flex-wrap: wrap; margin: 0 0 6px; }
+.es-tabs button { flex: 1; }
+.es-reiter[hidden] { display: none; }
+form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
+.es-feld { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); }
+.es-feld small, .formular label small { display: block; font-size: 12px; }
+.es-ort { padding: 10px 14px; border-radius: 12px; background: var(--karte-hell); color: var(--text); }
+.es-ort b { display: block; font-size: 15px; font-weight: 600; }
+.es-ort small { color: var(--muted); }
+.es-ort.leer { color: var(--muted); }
+.es-treffer { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.es-treffer-zeile { flex: none; width: 100%; padding: 8px 12px; border-radius: 10px; text-align: left; }
+.es-treffer-zeile b { display: block; font-size: 14px; font-weight: 500; }
+.es-treffer-zeile small { display: block; font-size: 12px; color: var(--muted); }
+.es-abschnitt { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 0; border-top: 1px solid var(--rand); }
+.es-abschnitt h4 { font-size: 15px; font-weight: 600; }
+.es-info { font-size: 13px; line-height: 1.5; color: var(--muted); }
+.es-info:empty { display: none; }
+.es-meldung { font-size: 13px; color: var(--accent-hell); }
+.es-meldung.fehler { color: var(--minus); }
+.es-meldung:empty { display: none; }
+.einstellungen .primary { color: #fff; background: var(--accent); border-color: transparent; padding: 10px 16px; }
+.einstellungen .primary:disabled { opacity: .6; }
+.es-modus { align-self: stretch; margin: 0; }
+.es-modus button { flex: 1; }
+
+/* ================= Fenster „Google Kalender“ ================= */
+.fenster.google { height: fit-content; max-height: min(85vh, 680px); }
+.google .fenster-liste { flex: 0 1 auto; }
+.gk-zeile { flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--karte-hell); }
+.gk-zeile div { flex: 1; min-width: 0; }
+.gk-zeile b, .gk-zeile small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gk-zeile b { font-size: 15px; font-weight: 500; }
+.gk-zeile small { font-size: 13px; color: var(--muted); }
+.gk-zeile small.fehler { color: var(--minus); }
+.google .leer { font-size: 14px; color: var(--muted); }
+/* ================= Formulare in Fenstern (Shortcut, Einstellungen) ================= */
+.fenster.klein { width: min(92vw, 480px); height: fit-content; }
+.formular { display: flex; flex-direction: column; gap: 14px; }
+.formular[hidden] { display: none; }
+.formular label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.formular input[type=text], .formular select { padding: 10px 12px; font-size: 16px; color: var(--text); }
+.formular-fehler { font-size: 13px; color: var(--accent-hell); }
+.formular-fehler:empty { display: none; }
+#scFehler { color: var(--minus); }
+.pin-feld { padding: 10px 12px; font-size: 22px; letter-spacing: 8px; font-variant-numeric: tabular-nums; }
+.pin-feld::placeholder { font-size: 16px; letter-spacing: normal; }
+.formular-knoepfe { display: flex; justify-content: flex-end; gap: 8px; }
+.formular-knoepfe button { padding: 10px 16px; }
+.formular-knoepfe .primary { color: #fff; background: var(--accent); border-color: transparent; }
+.formular-knoepfe .loeschen { margin-right: auto; color: var(--minus); border-color: rgba(248,113,113,.45); }
+.formular-knoepfe .loeschen[hidden] { display: none; }
+.wetter-tage > .empty { grid-column: 1 / -1; align-self: center; text-align: center; }
+
+.gk-form { flex: none; display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.gk-form p { font-size: 13px; line-height: 1.5; color: var(--muted); }
+.gk-form p b { color: var(--text); font-weight: 500; }
+.gk-form .fehler { color: var(--minus); }
+.gk-form .fehler:empty { display: none; }
+
+/* Einstellungen → Sicherheit → Konfiguration gesperrt (sicherheit.js): alles zum Einrichten ausblenden */
+.konfig-gesperrt :is(#finTabNeu, .pos-knoepfe, #googleBtn, #scNeu, #scBearbeiten, #spAbmelden, #spSchritte) { display: none !important; }
+
+/* ================= Touch & kleinere Bildschirme ================= */
+@media (pointer: coarse) {
+  button { min-height: 44px; }
+  .menue button, .einstellungen-btn { min-height: 48px; }
+  input, select { min-height: 44px; font-size: 16px; }
+  .sp-unten select, .sp-zeit input, .sp-unten input { min-height: 0; }
+  .tabs button { flex: 1; }
+  #notizText { font-size: 16px; }
+}
+
+/* Unter 1400 px (z. B. Tablet quer): schmale Seitenleiste nur mit Symbolen */
+@media (max-width: 1399px) {
+  .app { grid-template-columns: 100px minmax(0, 1fr); }
+  .leiste { align-items: center; padding: 22px 12px; }
+  .logo, .menue span, .einstellungen-btn span { display: none; }      /* schmale Leiste: nur Symbole, ohne Namen */
+  .app-version { display: flex; flex-direction: column; align-items: center; padding: 0; font-size: 11px; }   /* Datum über Uhrzeit */
+  .app-version span + span::before { content: none; }
+  .menue button, .einstellungen-btn { padding: 14px; justify-content: center; }
+  .menue button svg, .einstellungen-btn svg { width: 40px; height: 40px; }      /* nur Symbole – doppelt so groß wie früher */
+  .haupt { padding: 16px 20px 18px; }
+  .kachel { padding: 14px 16px; gap: 12px; }
+  .k-icon { width: 46px; height: 46px; padding: 11px; }
+  .kachel b { font-size: 23px; }
+  .w-tag { gap: 2px; padding: 6px 0 2px; }
+  .w-tag .w-icon { width: 26px; height: 26px; }
+  .w-spur { margin: 17px 0; }
+  .uhr-zeit b { font-size: 76px; }
+  .uhr-zeit #sek { font-size: 44px; }
+  .sync span { display: none; }        /* nur das Wolken-Symbol, Text steht im Tooltip */
+  .dash-unten > .karte { padding: 12px 16px; }   /* untere Reihe ist am Tablet flach */
+  .dash-unten .karte-kopf { margin-bottom: 6px; }
+  .uhr-chips { margin-top: 4px; }
+  .a-zeile { padding: 8px 10px 8px 0; }
+  .a-zeile::before { margin: -8px 0; }
+  .sp-titel b { font-size: 22px; }
+  .sp-titel small { font-size: 16px; }
+  .sp-knoepfe { gap: 6px; }
+  .sp-knoepfe button { width: 52px; height: 52px; }
+  .sp-knoepfe .sp-play { width: 66px; height: 66px; }
+  .sp-knoepfe .sp-musik { height: 52px; padding: 0 16px; font-size: 15px; }
+  .w-tag .w-icon { width: 22px; height: 22px; }
+  .w-spur { min-height: 20px; margin: 16px 0; }
+}
+
+/* Hochformat / schmal: Inhalte untereinander, die Seiten scrollen senkrecht */
+@media (max-width: 999px), (orientation: portrait) {
+  .kopf { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 14px; }
+  .kopf > .suche { grid-column: 1 / -1; grid-row: 2; margin: 0; min-width: 0; }
+  .kopf-gruss { max-width: none; }
+  .kopf h1 { font-size: 40px; }
+  .gruss-icon { width: 44px; height: 44px; }
+  .kopf p { font-size: 21px; }
+  /* Die Seite scrollt: Blöcke behalten ihre natürliche Höhe statt in die feste Höhe gequetscht zu werden */
+  .dash { display: flex; flex-direction: column; }
+  .dash > * { flex: none; }
+  .kacheln { grid-template-columns: repeat(6, minmax(0, 1fr)); }   /* 3 Kacheln oben, 2 darunter */
+  .kachel { grid-column: span 2; }
+  .kachel:nth-child(n+4) { grid-column: span 3; }
+  .dash-mitte { grid-template-columns: minmax(0, 1fr); }
+  .sp-oben { flex: none; height: 300px; }
+  .zuhause { min-height: 211px; }
+  .anstehend-karte { min-height: 220px; }
+  .dash-unten { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-unten > .wetter-karte { grid-column: 1 / -1; }   /* Wetter über die ganze Breite, Uhr und Anstehend darunter */
+  .netz, .smarthome { align-items: flex-start; }    /* Karte so hoch wie ihr Inhalt, die Seite scrollt */
+  .fin { display: flex; flex-direction: column; }
+  .fin > *, .fin-links > * { flex: none; }
+  .chart-karte .chart { flex: none; height: 300px; }
+  .depot-liste, .fin-treffer { flex: none; overflow: visible; }
+  .geraete-liste { flex: none; overflow: visible; }
+  .dash-unten > .karte { min-height: 240px; }
+  .uhr-mitte { min-height: 180px; }
+}
+
+/* Handy: Menü als Leiste unten */
+@media (max-width: 599px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .leiste { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; flex-direction: row; justify-content: center;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); border-right: none; border-top: 1px solid var(--rand);
+    background: rgba(10,15,26,.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .logo, .leiste-unten { display: none; }      /* Handy: Einstellungen am Tablet oder PC */
+  .menue { flex: 1; max-width: 480px; flex-direction: row; gap: 4px; }
+  .menue button { flex: 1; min-width: 0; flex-direction: column; gap: 3px; padding: 6px 2px; font-size: 11px; }
+  .menue button svg { width: 24px; height: 24px; }
+  .menue span { display: block; }
+  .haupt { padding: 14px 14px 78px; gap: 14px; }
+  .kopf h1 { font-size: 22px; gap: 8px; }
+  .gruss-icon { width: 24px; height: 24px; }
+  .kopf p { font-size: 14px; }
+  .blaettern { display: none; }       /* Handy: Menüleiste unten und Wischen reichen, mehr Platz für die Begrüßung */
+  .kacheln { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .sp-oben { height: 470px; flex-direction: column; }      /* Handy: Cover über der Playlist */
+  .sp-cover { width: min(55cqw, 220px); height: min(55cqw, 220px); align-self: center; }
+  .kacheln .kachel { grid-column: auto; }
+  .kacheln .kachel:last-child { grid-column: span 2; }
+  .dash { gap: 10px; }
+  .dash-unten { grid-template-columns: minmax(0, 1fr); }
+  #calPanel { padding: 14px; }
+  .ds-zahlen b { font-size: 22px; }
+  .chart-karte .chart { height: 240px; }
+  .zeitraeume { width: 100%; justify-content: space-between; gap: 0; }
+  .zeitraeume button { padding: 4px 5px; font-size: 12px; }
+  .grid { gap: 3px; }
+  .day { font-size: 14px; padding: 4px 5px; border-radius: 8px; }
+  .day .lbls { display: none; }      /* zu eng für Beschriftungen: Punkte und kurze Feiertagsnamen */
+  .day .dot { display: flex; }
+  .day .ft-name { display: block; }
+  .geraete-karte { padding: 16px; }
+  .geraete-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .geraet { min-height: 118px; padding: 14px; gap: 10px; }
+  .g-icon { width: 44px; height: 44px; padding: 10px; }
+  .g-text b { font-size: 15px; }
+  .g-text small { font-size: 12px; }
+  .g-pfeil { top: 14px; right: 14px; width: 16px; height: 16px; }
+}

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0f1a">
+<title>Zuhause</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Seitenleiste: Logo, Menü (= die fünf Seiten), unten Version und Einstellungen -->
+  <aside class="leiste">
+    <div class="logo">
+      <div><b id="hubName">Intranet</b><small>Zuhause</small></div>
+    </div>
+    <nav class="menue">
+      <button data-seite="2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button data-seite="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        <span>Kalender</span>
+      </button>
+      <button data-seite="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/><path d="M15 8h5v5"/></svg>
+        <span>Finanzen</span>
+      </button>
+      <button data-seite="3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 4 14h7l-1 7 9-11h-7z"/></svg>
+        <span>Shortcuts</span>
+      </button>
+      <button data-seite="4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M12 17v-3M9.5 12.5a3.5 3.5 0 1 0 5 0"/></svg>
+        <span>Smarthome</span>
+      </button>
+    </nav>
+    <div class="leiste-unten">
+    <small class="app-version" id="appVersion" hidden></small>   <!-- aktualisierung.js -->
+    <button class="einstellungen-btn" id="einstellungenBtn" title="Einstellungen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      <span>Einstellungen</span>
+    </button>
+    </div>
+  </aside>
+
+  <div class="haupt">
+    <!-- Kopf: Begrüßung, Suche, Blättern -->
+    <header class="kopf">
+      <div class="kopf-gruss">
+        <h1><span id="gruss"></span> <span class="gruss-icon w-icon" id="grussIcon"></span></h1>
+        <p id="unterzeile"></p>
+      </div>
+      <form class="suche" id="suche" role="search">
+        <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input type="search" id="suchText" placeholder="Im Web suchen oder Adresse eingeben …" autocomplete="off" aria-label="Suche">
+        <button type="button" class="leeren" id="suchLeeren" aria-label="Eingabe löschen" title="Eingabe löschen" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <kbd>/</kbd>
+      </form>
+      <div class="kopf-rechts">
+        <span class="sync" id="sync" data-zustand="verbinde">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 18.5h9.5a4 4 0 0 0 0-8h-.3A5.5 5.5 0 0 0 6 11.5a3.5 3.5 0 0 0 1.5 7z"/></svg>
+          <span id="syncText"></span>
+        </span>
+        <div class="blaettern">
+          <button class="pfeil" id="pfeilLinks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button class="pfeil" id="pfeilRechts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Fünf Seiten nebeneinander: Finanzen | Kalender | Dashboard | Shortcuts | Smarthome. Wechsel über das Menü, die Pfeile, Wischen oder ← → -->
+    <main class="ansicht">
+      <div class="seiten" id="seiten">
+
+        <!-- Finanzen: links Summe und Diagramm (Gesamt oder das gewählte Asset), rechts die Reiter Hinzufügen und Assets (finanzen.js) -->
+        <section class="seite fin" aria-label="Finanzen">
+          <div class="fin-links">
+            <section class="karte depot-summe">
+              <div class="karte-kopf"><h3 id="depotTitel">Mein Depot</h3><small id="depotStand"></small></div>
+              <div class="ds-zahlen">
+                <div><small>Gesamtwert</small><b id="depotWert">–</b></div>
+                <div><small>Gewinn / Verlust seit Kauf</small><b id="depotGewinn">–</b><span id="depotGewinnProz"></span></div>
+              </div>
+            </section>
+            <section class="karte chart-karte">
+              <div class="chart-kopf">
+                <div class="chart-titel"><h3 id="chartTitel">Gesamtes Depot</h3><small id="chartAenderung"></small></div>
+                <div class="zeitraeume" id="zeitraeume">
+                  <button data-zeitraum="1t">Intraday</button><button data-zeitraum="1w">1W</button><button data-zeitraum="1m">1M</button><button data-zeitraum="3m">3M</button><button data-zeitraum="1j">1J</button><button data-zeitraum="3j">3J</button><button data-zeitraum="5j">5J</button><button data-zeitraum="max">MAX</button>
+                </div>
+              </div>
+              <div class="chart" id="chart"></div>
+            </section>
+          </div>
+
+          <section class="karte fin-rechts">
+            <div class="tabs fin-tabs">
+              <button id="finTabNeu"><span id="finTitel">Hinzufügen</span></button>
+              <button id="finTabAssets">Assets <small id="depotAnzahl"></small></button>
+            </div>
+            <div class="fin-reiter" id="finAssets">
+              <div class="depot-liste" id="depotListe"></div>
+            </div>
+            <div class="fin-reiter" id="finNeu" hidden>
+              <form class="suche" id="finSuche" role="search">
+                <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                <input type="search" id="finSuchText" placeholder="Aktie, ETF, Fonds, Krypto oder ISIN …" autocomplete="off" aria-label="Wertpapier oder Krypto suchen">
+                <button type="submit" class="los">Suchen</button>
+              </form>
+              <div class="fin-treffer" id="finTreffer"></div>
+              <form class="fin-form" id="finForm" hidden>
+                <div class="fin-gewaehlt">
+                  <b id="finName"></b>
+                  <small id="finInfo"></small>
+                  <div class="fin-kurs" id="finKurs"></div>
+                </div>
+                <label>Stückzahl <small>(bis 8 Nachkommastellen)</small>
+                  <input type="text" id="finMenge" inputmode="decimal" placeholder="z. B. 0,12345678" autocomplete="off">
+                </label>
+                <label>Einkaufskurs pro Stück in € <small>(optional, für Gewinn/Verlust)</small>
+                  <input type="text" id="finEinkauf" inputmode="decimal" placeholder="z. B. 320,09" autocomplete="off">
+                </label>
+                <p class="fin-fehler" id="finFehler"></p>
+                <div class="fin-knoepfe">
+                  <button type="button" id="finAbbrechen">Abbrechen</button>
+                  <button type="submit" class="primary" id="finOk">Zum Depot hinzufügen</button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </section>
+
+        <!-- Kalender -->
+        <section class="seite kal" aria-label="Kalender">
+          <section class="karte gross" id="calPanel">
+            <div class="cal-head">
+              <h2 id="monthLabel"></h2>
+              <div class="nav">
+                <button id="prev" aria-label="Voriger Monat">‹</button>
+                <button id="todayBtn">Heute</button>
+                <button id="next" aria-label="Nächster Monat">›</button>
+                <button id="googleBtn" title="Google Kalender verbinden">Google</button>
+              </div>
+            </div>
+            <div class="grid" id="grid"></div>
+            <div class="legende"><span class="l-f">Feiertag</span><span class="l-u">Urlaub</span><span class="l-t">Termin</span><span class="l-g">Google</span></div>
+            <div class="mehrfach" id="mehrfach">
+              <span id="selCount"></span>
+              <select id="mArt" aria-label="Art"><option value="termin">Termin</option><option value="urlaub">Urlaub</option></select>
+              <input type="time" id="mTime" aria-label="Uhrzeit">
+              <input type="text" id="mText" placeholder="Titel …" maxlength="80">
+              <button id="mAdd" class="primary" disabled>Anlegen</button>
+              <button id="mLoeschen" class="loeschen" disabled>Einträge löschen</button>
+              <button id="mClear">Auswahl aufheben</button>
+            </div>
+          </section>
+        </section>
+
+        <!-- Dashboard -->
+        <section class="seite dash" aria-label="Dashboard">
+          <div class="kacheln">
+            <div class="kachel"><span class="k-icon w-icon" id="kAussenIcon"></span>
+              <div><small>Außen</small><b id="kAussen">–°</b><span id="kAussenText">Lade Wetter …</span></div></div>
+            <div class="kachel"><span class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0z"/><path d="M12 9v8"/></svg></span>
+              <div><small>Heute</small><b id="kHeute">–</b><span>Höchst / Tiefst</span></div></div>
+            <div class="kachel"><span class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/></svg></span>
+              <div><small>Wind</small><b id="kWind">–</b><span id="kWindText"></span></div></div>
+            <div class="kachel"><span class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></span>
+              <div><small>Luftfeuchte</small><b id="kFeuchte">–</b><span id="kFeuchteText"></span></div></div>
+            <div class="kachel"><span class="k-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v7a2 2 0 0 1-4 0"/></svg></span>
+              <div><small>Regen</small><b id="kRegen">–</b><span>Risiko heute</span></div></div>
+          </div>
+
+          <div class="dash-mitte">
+            <!-- Hintergrundbild je Jahreszeit und Tageszeit, weich überblendet (uhr.js) -->
+            <section class="karte zuhause">
+              <div class="bg active" id="bgA"><div class="main"></div></div>
+              <div class="bg" id="bgB"><div class="main"></div></div>
+              <div class="zuhause-kopf">
+                <small id="zuhauseOrt"></small>
+              </div>
+              <div class="zuhause-chips"><span class="chip jz" id="chipJahreszeit"></span><span class="chip" id="chipTageszeit"></span></div>
+              <div class="zuhause-sonne">
+                <span class="chip" title="Sonnenaufgang">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18M7 19a5 5 0 0 1 10 0"/><path d="M12 11V4M9 7l3-3 3 3"/></svg>
+                  <span id="aufgang">–</span>
+                </span>
+                <span class="chip" title="Sonnenuntergang">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18M7 19a5 5 0 0 1 10 0"/><path d="M12 4v7M9 8l3 3 3-3"/></svg>
+                  <span id="untergang">–</span>
+                </span>
+              </div>
+            </section>
+            <section class="karte spotify" id="spotify">
+              <div class="karte-kopf"><h3>Spotify</h3><button id="spAbmelden" hidden>Abmelden</button></div>
+              <div id="spLogin">
+                <p class="sp-hinweis" id="spHinweis"></p>
+                <div class="sp-schritte" id="spSchritte" hidden>
+                  <a class="sp-anmelden" id="spAnmelden" target="_blank" rel="noopener">1. Bei Spotify anmelden</a>
+                  <form class="sp-code" id="spCodeForm">
+                    <input type="text" id="spCode" placeholder="2. Adresse der Fehlerseite hier einfügen …" autocomplete="off" spellcheck="false" aria-label="Adresse nach der Anmeldung">
+                    <button type="submit">Übernehmen</button>
+                  </form>
+                </div>
+              </div>
+              <div id="spPlayer" hidden>
+                <!-- Oben: Cover über die ganze Höhe, rechts Titel und die laufende Playlist bzw. das Album
+                     (antippen = ab hier abspielen), sonst die Warteschlange -->
+                <div class="sp-oben">
+                  <img class="sp-cover" id="spCover" alt="">
+                  <div class="sp-rechts">
+                    <div class="sp-titel"><b id="spSong"></b><small id="spKuenstler"></small></div>
+                    <div class="sp-playlist">
+                      <div class="sp-playlist-kopf"><b id="spListeName"></b><small id="spListeInfo"></small></div>
+                      <div class="sp-playlist-liste" id="spPlaylist"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="sp-zeit">
+                  <span id="spPos">0:00</span>
+                  <input type="range" id="spFortschritt" min="0" max="1000" value="0" aria-label="Position im Lied">
+                  <span id="spDauer">0:00</span>
+                </div>
+                <div class="sp-knoepfe">
+                  <button id="spZurueck" aria-label="Vorheriges Lied" title="Vorheriges Lied">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>
+                  </button>
+                  <button class="sp-play" id="spPlay" aria-label="Abspielen" title="Abspielen"></button>
+                  <button id="spWeiter" aria-label="Nächstes Lied" title="Nächstes Lied">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>
+                  </button>
+                  <div class="sp-unten">
+                    <select id="spGeraet" aria-label="Wiedergabegerät"></select>
+                    <input type="range" id="spLaut" min="0" max="100" value="50" aria-label="Lautstärke" title="Lautstärke">
+                  </div>
+                  <button class="sp-musik" id="spMusikBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                    Musik
+                  </button>
+                </div>
+              </div>
+              <div class="sp-meldung" id="spMeldung"></div>
+            </section>
+          </div>
+
+          <div class="dash-unten">
+            <section class="karte wetter-karte">
+              <div class="karte-kopf"><h3>Wettervorschau</h3><small id="wetterStand"></small></div>
+              <div class="wetter-tage" id="wetterTage"></div>
+            </section>
+            <section class="karte uhr-karte">
+              <div class="karte-kopf"><h3>Uhrzeit</h3><small id="uhrWochentag"></small></div>
+              <div class="uhr-mitte">
+                <div class="uhr-zeit"><b id="time"></b><span id="sek"></span></div>
+              </div>
+              <div class="uhr-chips"><span class="chip" id="chipKw"></span><span class="chip" id="chipTag"></span></div>
+            </section>
+            <section class="karte anstehend-karte">
+              <div class="karte-kopf"><h3>Anstehend</h3><small id="anstehendAnzahl"></small></div>
+              <ul id="anstehend"></ul>
+            </section>
+          </div>
+
+          <!-- Notiz: direkt hier eintippen, wird automatisch gespeichert (notizen.js) -->
+          <label class="karte fusszeile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>
+            <span class="notiz-titel"><b>Notiz</b><small id="notizStatus">Gespeichert</small></span>
+            <textarea id="notizText" rows="1" placeholder="Hier eine Notiz hinterlassen …" spellcheck="true"></textarea>
+          </label>
+        </section>
+
+        <!-- Shortcuts: Links zu den Geräten im Heimnetz, Google usw. – Liste in der Datenbank (shortcuts.js) -->
+        <section class="seite netz" aria-label="Shortcuts">
+          <section class="karte geraete-karte">
+            <div class="karte-kopf"><h2>Shortcuts</h2><small id="geraeteAnzahl"></small></div>
+            <div class="geraete-liste" id="geraeteListe"></div>
+            <div class="sc-knoepfe">
+              <button id="scBearbeiten">Shortcuts bearbeiten</button>
+              <button class="primary" id="scNeu">Shortcut hinzufügen</button>
+            </div>
+          </section>
+        </section>
+
+        <!-- Smarthome: noch leer -->
+        <section class="seite smarthome" aria-label="Smarthome">
+          <section class="karte smarthome-karte">
+            <div class="karte-kopf"><h2>Smarthome</h2></div>
+            <p class="leer">Hier kommen bald Licht, Heizung und Co. hin.</p>
+          </section>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<dialog class="fenster musik" id="musik">
+  <div class="fenster-kopf">
+    <h3>Musik</h3>
+    <button id="musikZu" aria-label="Schließen" title="Schließen">✕</button>
+  </div>
+  <form class="suche" id="spSuche" role="search">
+    <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    <input type="search" id="spSuchText" placeholder="Lied, Künstler oder Album …" autocomplete="off" aria-label="Musik suchen">
+    <button type="submit" class="los">Suchen</button>
+  </form>
+  <div class="tabs">
+    <button id="spTabSuche" class="on">Suche</button>
+    <button id="spTabListen">Meine Playlists</button>
+  </div>
+  <div class="fenster-liste" id="spListe"></div>
+</dialog>
+
+<dialog class="fenster einstellungen" id="einstellungen">
+  <div class="fenster-kopf">
+    <h3>Einstellungen</h3>
+    <button id="einstellungenZu" aria-label="Schließen" title="Schließen">✕</button>
+  </div>
+  <div class="tabs es-tabs" id="esTabs">
+    <button data-reiter="version">Versionsverwaltung</button>
+    <button data-reiter="person">Persönliche Angaben</button>
+    <button data-reiter="hub">Intranet-Name</button>
+    <button data-reiter="sicherheit">Sicherheit</button>
+  </div>
+
+  <!-- Reiter 1: Version von GitHub ziehen, automatische Updates -->
+  <div class="es-reiter" data-reiter="version">
+    <section class="es-abschnitt">
+      <h4>Version</h4>
+      <p class="es-info" id="esVersion">–</p>
+      <button class="primary" id="esZiehen">Aktuellste Version ziehen</button>
+      <p class="es-meldung" id="esMeldung"></p>
+    </section>
+    <section class="es-abschnitt">
+      <h4>Automatische Updates von GitHub</h4>
+      <div class="tabs es-modus" id="esModus">
+        <button data-modus="minuten" id="esMinuten">Alle 15 Minuten</button>
+        <button data-modus="taeglich" id="esTaeglich">1× am Tag</button>
+        <button data-modus="aus">Aus</button>
+      </div>
+      <p class="es-info" id="esPlan"></p>
+    </section>
+  </div>
+
+  <!-- Reiter 2: Name für die Begrüßung, Ort für Wetter, Sonnenzeiten und Feiertage -->
+  <form class="es-reiter formular" data-reiter="person" id="esPersonForm" hidden>
+    <label>Name <small>für die Begrüßung, z. B. „Guten Morgen, Anna“</small>
+      <input type="text" id="esName" maxlength="60" autocomplete="off" placeholder="Name">
+    </label>
+    <div class="es-feld">
+      <span>Ort <small>für Wetter, Sonnenauf- und -untergang und die Feiertage</small></span>
+      <div class="es-ort" id="esOrt"></div>
+      <div class="suche">
+        <input type="search" id="esOrtSuche" placeholder="Ort suchen, z. B. Regensburg …" autocomplete="off" aria-label="Ort suchen">
+        <button type="button" class="los" id="esOrtLos">Suchen</button>
+      </div>
+      <div class="es-treffer" id="esOrtTreffer"></div>
+    </div>
+    <label>Bundesland <small>bestimmt die Feiertage im Kalender</small>
+      <select id="esLand"></select>
+    </label>
+    <p class="formular-fehler" id="esPersonMeldung"></p>
+    <div class="formular-knoepfe"><button type="submit" class="primary">Speichern</button></div>
+  </form>
+
+  <!-- Reiter 3: Name oben links -->
+  <form class="es-reiter formular" data-reiter="hub" id="esHubForm" hidden>
+    <label>Name des Intranets <small>steht oben links in der Seitenleiste und im Browser-Tab</small>
+      <input type="text" id="esHub" maxlength="40" autocomplete="off" placeholder="z. B. Familie Muster">
+    </label>
+    <p class="formular-fehler" id="esHubMeldung"></p>
+    <div class="formular-knoepfe"><button type="submit" class="primary">Speichern</button></div>
+  </form>
+
+  <!-- Reiter 4: PIN für die Einstellungen, Konfiguration auf den Seiten sperren (sicherheit.js) -->
+  <div class="es-reiter" data-reiter="sicherheit" hidden>
+    <section class="es-abschnitt">
+      <h4>PIN für die Einstellungen</h4>
+      <p class="es-info" id="esPinInfo"></p>
+      <button class="primary" id="esPin">PIN einschalten</button>
+    </section>
+    <section class="es-abschnitt">
+      <h4>Konfiguration auf den Seiten</h4>
+      <p class="es-info" id="esSperreInfo"></p>
+      <button class="primary" id="esSperre">Konfiguration sperren</button>
+      <p class="es-meldung" id="esSicherheitMeldung"></p>
+    </section>
+  </div>
+</dialog>
+
+<!-- PIN eingeben (Einstellungen öffnen) bzw. neu festlegen (sicherheit.js) -->
+<dialog class="fenster klein" id="pinFenster">
+  <div class="fenster-kopf">
+    <h3 id="pinTitel">PIN eingeben</h3>
+    <button id="pinZu" aria-label="Schließen" title="Schließen">✕</button>
+  </div>
+  <form class="formular" id="pinForm">
+    <p class="es-info" id="pinText"></p>
+    <label>PIN <input type="password" class="pin-feld" id="pin1" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="5 Ziffern"></label>
+    <label id="pinFeld2">PIN wiederholen <input type="password" class="pin-feld" id="pin2" inputmode="numeric" maxlength="5" autocomplete="off"></label>
+    <p class="formular-fehler" id="pinFehler"></p>
+    <div class="formular-knoepfe">
+      <button type="button" id="pinAbbrechen">Abbrechen</button>
+      <button type="submit" class="primary" id="pinOk">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="fenster klein" id="scFenster">
+  <div class="fenster-kopf">
+    <h3 id="scTitel">Shortcut hinzufügen</h3>
+    <button id="scZu" aria-label="Schließen" title="Schließen">✕</button>
+  </div>
+  <form class="formular" id="scForm">
+    <label>Name <input type="text" id="scName" maxlength="60" placeholder="z. B. FritzBox Erdgeschoss" autocomplete="off"></label>
+    <label>Adresse <input type="text" id="scUrl" placeholder="z. B. http://192.168.178.1 oder fritz.box" autocomplete="off" spellcheck="false" inputmode="url"></label>
+    <p class="formular-fehler" id="scFehler"></p>
+    <div class="formular-knoepfe">
+      <button type="button" class="loeschen" id="scLoeschen">Entfernen</button>
+      <button type="button" id="scAbbrechen">Abbrechen</button>
+      <button type="submit" class="primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="fenster google" id="google">
+  <div class="fenster-kopf">
+    <h3>Google Kalender</h3>
+    <button id="googleZu" aria-label="Schließen" title="Schließen">✕</button>
+  </div>
+  <div class="fenster-liste" id="gListe"></div>
+  <form class="gk-form" id="gForm">
+    <p>Neuen Kalender verbinden: Google Kalender am PC öffnen → Zahnrad → <b>Einstellungen</b> → links den Kalender
+      wählen → <b>Kalender integrieren</b> → <b>Geheime Adresse im iCal-Format</b> kopieren und hier einfügen.
+      Die Termine erscheinen dann auf allen Geräten (nur anzeigen, nicht ändern).</p>
+    <div class="suche">
+      <input type="text" id="gAdresse" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off" spellcheck="false" aria-label="Geheime iCal-Adresse">
+      <button type="submit" class="los" id="gOk">Verbinden</button>
+    </div>
+    <p class="fehler" id="gMeldung"></p>
+  </form>
+</dialog>
+
+<script src="config.js"></script>          <!-- Einstellungen aus dem Docker-Container (sonst leer) -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  // Live Server ("Go Live") liefert nur den Ordner src/ aus, damit gleich die Startseite erscheint
+  "liveServer.settings.root": "/src",
+  "liveServer.settings.host": "127.0.0.1"
+}
