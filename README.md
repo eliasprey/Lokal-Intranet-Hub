@@ -38,8 +38,10 @@ Lokal-Intranet-Hub/
 │  │  └─ shortcuts.js      Seite „Shortcuts“: Kacheln anlegen, ändern, entfernen
 │  └─ assets/backgrounds/  16 Hintergrundbilder, benannt nach <jahreszeit>_<tageszeit>.jpg
 ├─ Dockerfile              baut das Docker-Image (Python + Seite, Datenbank unter /data)
-├─ .github/workflows/      baut bei jedem Push auf main das Docker-Image (GitHub Actions)
-├─ unraid/                 Vorlage für Unraid
+├─ docker-compose.yml      Start mit Docker Compose auf jedem Linux-Rechner
+├─ .github/workflows/      baut bei jedem Push auf main das Docker-Image (GitHub Actions, amd64 + arm64)
+├─ systemd/                Dienst-Datei für den Betrieb ohne Docker
+├─ unraid/                 Vorlage für Unraid (optional)
 ├─ .vscode/settings.json   Live Server liefert nur src/ aus
 └─ README.md
 ```
@@ -147,7 +149,7 @@ Kopfzeile (Begrüßung, Suche) bleibt immer stehen.
 ## Wo werden die Daten gespeichert?
 
 **Termine, Urlaube, Notizen, das Depot, die Shortcuts und die persönlichen Angaben** liegen in der Datenbank auf dem Server (`intranet.db`, im Container
-unter `/data`, auf Unraid im appdata-Ordner). Jedes Gerät – PC, Tablet, Handy – sieht dieselben Einträge.
+unter `/data`, siehe [Installation auf Linux](#installation-auf-linux)). Jedes Gerät – PC, Tablet, Handy – sieht dieselben Einträge.
 
 - Jede Änderung erscheint sofort und wird an den Server geschickt. Die anderen Geräte sehen sie nach
   spätestens 10 Sekunden (beim Entsperren des Tablets sofort).
@@ -165,8 +167,9 @@ unter `/data`, auf Unraid im appdata-Ordner). Jedes Gerät – PC, Tablet, Handy
 Auch die **Spotify-Anmeldung** liegt auf dem Server und gilt für alle Geräte. Nur die
 zwischengespeicherten Wetterdaten bleiben pro Gerät.
 
-**Sicherung:** Den Ordner `/mnt/user/appdata/lokal-intranet-hub` mit ins Backup nehmen (z. B. mit dem
-Plugin *Appdata Backup*). Die Datenbank lässt sich mit jedem SQLite-Programm öffnen.
+**Sicherung:** Den Daten-Ordner mit ins Backup nehmen – bei Docker Compose `daten/` neben der
+`docker-compose.yml`, ohne Docker `/var/lib/lokal-intranet-hub`, auf Unraid `/mnt/user/appdata/lokal-intranet-hub`.
+Die Datenbank lässt sich mit jedem SQLite-Programm öffnen.
 
 Die Schnittstelle ist im Heimnetz ohne Passwort erreichbar – wer die Seite öffnen kann, kann auch
 Einträge ändern. Die Seite deshalb nicht ungeschützt ins Internet stellen.
@@ -241,10 +244,17 @@ kostenlos und dauert ein paar Minuten.
 3. Unter **User Management** die E-Mail-Adresse jedes Spotify-Kontos eintragen, das sich anmelden soll
    (höchstens 5).
 
-### Auf Unraid
+### Auf dem Server
 
-Beim Container **Spotify Client-ID** und **Spotify Client-Secret** eintragen → **Apply**. Das Secret
-bleibt auf dem Server und kommt nie in den Browser.
+Client-ID und Client-Secret als `SPOTIFY_CLIENT_ID` und `SPOTIFY_CLIENT_SECRET` eintragen:
+
+- **Docker Compose:** in der `docker-compose.yml` unter `environment`, dann `docker compose up -d`.
+- **Ohne Docker:** `sudo systemctl edit lokal-intranet-hub`, dort unter `[Service]` je eine Zeile
+  `Environment=SPOTIFY_CLIENT_ID=…` und `Environment=SPOTIFY_CLIENT_SECRET=…`, dann
+  `sudo systemctl restart lokal-intranet-hub`.
+- **Unraid:** beim Container **Spotify Client-ID** und **Spotify Client-Secret** → **Apply**.
+
+Das Secret bleibt auf dem Server und kommt nie in den Browser.
 
 ### Anmelden (einmal, an einem beliebigen Gerät)
 
@@ -270,62 +280,67 @@ Wichtig:
   einmal kurz die Spotify-App darauf öffnen. Im Browser selbst wird nicht abgespielt.
 - Ganz entziehen lässt sich der Zugriff unter <https://www.spotify.com/account/apps/>.
 
-## Docker / Unraid
+## Installation auf Linux
+
+Der Hub läuft auf jedem Linux-Rechner im Heimnetz, der dauerhaft an ist – Server, NAS, alter PC oder Raspberry Pi.
+Am einfachsten mit Docker; ohne Docker reicht Python ab 3.9 (ohne Zusatzpakete).
 
 Bei jedem Push auf `main` baut GitHub automatisch ein fertiges Docker-Image
-(`.github/workflows/docker.yml`) und legt es unter **`ghcr.io/eliasprey/lokal-intranet-hub:latest`** ab.
-Im Image liefert `server/server.py` den Ordner `src/` auf Port 80 aus und speichert die Daten in
-`/data/intranet.db`. Unraid lädt einfach dieses Image.
+(`.github/workflows/docker.yml`) für **amd64** (Intel/AMD) und **arm64** (Raspberry Pi 4/5, 64-Bit-System) und
+legt es unter **`ghcr.io/eliasprey/lokal-intranet-hub:latest`** ab. Im Image liefert `server/server.py` den Ordner
+`src/` auf Port 80 aus und speichert die Daten in `/data/intranet.db`.
 
-So kommt es auf Unraid:
+Ist das Image auf GitHub privat (**Packages → lokal-intranet-hub → Package settings**), muss man sich auf dem
+Rechner einmal anmelden: `docker login ghcr.io -u eliasprey` (als Passwort ein GitHub-Token mit dem Recht
+`read:packages`). Steht es auf **Public**, entfällt das – es enthält keine Zugangsdaten.
 
-1. Auf GitHub pushen. Unter **Actions** läuft der Build (ca. 1 Minute).
-2. Ist das Image auf GitHub privat (**Packages → lokal-intranet-hub → Package settings**), sich einmal im
-   Unraid-Terminal anmelden: `docker login ghcr.io -u eliasprey` (als Passwort ein GitHub-Token mit dem Recht
-   `read:packages`). Steht es auf **Public**, entfällt das – es enthält keine Zugangsdaten.
-3. Die Vorlage `unraid/lokal-intranet-hub.xml` nach `/boot/config/plugins/dockerMan/templates-user/`
+### Mit Docker Compose (empfohlen)
+
+1. Docker mit dem Compose-Plugin installieren (<https://docs.docker.com/engine/install/>; auf Debian, Ubuntu und
+   Raspberry Pi OS z. B. `curl -fsSL https://get.docker.com | sudo sh`).
+2. Einen Ordner anlegen und die `docker-compose.yml` aus diesem Repository hineinlegen:
+   ```sh
+   sudo mkdir -p /opt/lokal-intranet-hub && cd /opt/lokal-intranet-hub
+   sudo curl -fsSLO https://raw.githubusercontent.com/eliasprey/Lokal-Intranet-Hub/main/docker-compose.yml
+   ```
+3. Optional in der Datei Spotify Client-ID und Client-Secret eintragen oder den Port ändern.
+4. `sudo docker compose up -d` → die Seite ist unter **`http://<IP des Rechners>:8080`** erreichbar
+   (die IP zeigt `hostname -I`).
+
+Die Datenbank liegt in `daten/` neben der `docker-compose.yml`. Der Container startet nach einem Neustart des
+Rechners von selbst. Log ansehen: `sudo docker compose logs -f`.
+
+Ohne Compose geht dasselbe mit einem Befehl:
+`docker run -d --name lokal-intranet-hub --restart unless-stopped -p 8080:80 -v /opt/lokal-intranet-hub/daten:/data ghcr.io/eliasprey/lokal-intranet-hub:latest`
+
+### Ohne Docker (systemd)
+
+Für Rechner, auf denen kein Docker laufen soll. Braucht nur `python3` (ab 3.9) und `git`:
+
+```sh
+sudo git clone https://github.com/eliasprey/Lokal-Intranet-Hub.git /opt/lokal-intranet-hub
+sudo cp /opt/lokal-intranet-hub/systemd/lokal-intranet-hub.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now lokal-intranet-hub
+```
+
+→ **`http://<IP des Rechners>:8080`**. Der Dienst läuft mit einem eigenen Benutzer ohne Rechte, die Datenbank und
+geladene Updates liegen in `/var/lib/lokal-intranet-hub`. Log ansehen: `journalctl -u lokal-intranet-hub -f`.
+Port, Spotify usw. ändern: `sudo systemctl edit lokal-intranet-hub` (Variablen siehe oben in `server/server.py`).
+
+### Unraid
+
+1. Die Vorlage `unraid/lokal-intranet-hub.xml` nach `/boot/config/plugins/dockerMan/templates-user/`
    kopieren (z. B. über die Netzwerkfreigabe `flash` → `config/plugins/dockerMan/templates-user/`).
-4. Im Docker-Tab **Container hinzufügen** → Vorlage **lokal-intranet-hub** wählen. Netzwerk ist schon
+2. Im Docker-Tab **Container hinzufügen** → Vorlage **lokal-intranet-hub** wählen. Netzwerk ist schon
    **Custom: br0** mit der festen IP **192.168.178.50** (siehe „Feste IP-Adresse“ unten). Den Ordner
    **Daten** (Standard `/mnt/user/appdata/lokal-intranet-hub`) und optional Spotify Client-ID und
    Client-Secret eintragen → **Anwenden**. Die Seite ist dann unter **`http://192.168.178.50`** erreichbar.
-5. **Updates** kommen von selbst (siehe „Automatische Updates“ unten), eintragen muss man dafür nichts.
+3. **Wer den Container schon vorher eingerichtet hat** und dort noch keinen Ordner „Daten“ hat: im Container
+   **Edit → Add another Path** mit Container-Pfad `/data` und Host-Pfad `/mnt/user/appdata/lokal-intranet-hub`
+   ergänzen. Ohne diesen Pfad liegt die Datenbank im Container und ist bei einem Update weg.
 
-### Automatische Updates
-
-Der Server sieht alle **15 Minuten** auf GitHub nach, ob auf `main` ein neuer Commit liegt – oder, je nach Wahl
-unter **Einstellungen** (Knopf unten in der Seitenleiste), nur 1× am Tag nachts um 3 Uhr oder gar nicht von selbst.
-Dort holt **„Aktuellste Version ziehen“** ein Update sofort. Gibt es einen neuen Commit:
-
-1. lädt er `src/` und `server/` dieses Commits herunter (nach `/data/code/<commit>`),
-2. prüft, ob `server.py` fehlerfrei ist – sonst bleibt alles beim Alten und er versucht es beim nächsten Mal,
-3. startet sich mit dem neuen Code neu (dauert unter einer Sekunde; die Datenbank bleibt, wie sie ist),
-4. die offenen Seiten (Tablet, PC) merken die neue Version innerhalb einer Minute und laden sich neu –
-   aber erst, wenn eine Minute lang nichts eingegeben wurde. Noch nicht gespeicherte Einträge gehen nicht
-   verloren.
-
-Nach einem Push ist die Änderung also nach spätestens etwa 16 Minuten überall zu sehen (bei „1× am Tag“ am
-nächsten Morgen, mit „Aktuellste Version ziehen“ sofort). Was sich am
-Docker-Image selbst ändert (`Dockerfile`, Python-Version), kommt weiterhin nur über **Aktualisieren** im
-Docker-Tab bzw. das Plugin **CA Auto Update Applications**.
-
-**Versionsnummer:** Klein über dem Knopf **Einstellungen** steht, welcher Stand läuft, z. B. `v2026.10.29 · 20:04`.
-Das ist der Zeitpunkt des Commits (Jahr.Monat.Tag · Uhrzeit), der Commit selbst steht im Tooltip. Die Nummer entsteht
-von selbst, man muss nichts hochzählen. Mit Uhrzeit, weil oft mehrere Commits am selben Tag kommen. So sieht man
-z. B. am Wandtablet sofort, ob es schon den neuesten Stand hat.
-
-**Kein Token nötig:** Das Repository ist öffentlich, der Server holt die Updates ohne Anmeldung. GitHub erlaubt
-so 60 Anfragen pro Stunde je Internetanschluss – alle 15 Minuten nachsehen braucht davon 4.
-
-Im Docker-Log (Unraid: Container-Symbol → **Logs**) steht, was passiert, z. B.
-`Neue Version 3f2a1b9 von GitHub geladen – Server startet neu`. Steht dort `GitHub antwortet 404`, ist das
-Repository nicht (mehr) öffentlich oder `UPDATE_REPO` falsch; bei `403` oder `429` ist das Anfrage-Limit erreicht.
-
-Einstellungen (Container-Variablen): `UPDATE_MINUTEN` (Standard `15`, `0` schaltet die Updates ab),
-`UPDATE_REPO` (Standard `eliasprey/Lokal-Intranet-Hub`), `UPDATE_ZWEIG` (Standard `main`).
-Lokal mit `python3 server/server.py` gibt es keine Updates, solange `UPDATE_REPO` nicht gesetzt ist.
-
-### Feste IP-Adresse (192.168.178.50)
+#### Feste IP-Adresse (192.168.178.50)
 
 Der Container bekommt eine eigene Adresse im Heimnetz, wie ein eigenes Gerät. Die Seite läuft dort
 direkt auf Port 80: `http://192.168.178.50` – ohne `:8080`. Die Port-Einstellung der Vorlage gilt nur,
@@ -346,20 +361,53 @@ Einmalig vorbereiten:
 3. **Bestehender Container:** Im Docker-Tab auf den Container → **Edit** → **Network Type:
    Custom: br0**, **Fixed IP address: 192.168.178.50** → **Apply**.
 
-Gut zu wissen:
+**Unraid selbst erreicht die Adresse zunächst nicht.** Alle anderen Geräte im Heimnetz schon. Soll
+der Unraid-Server oder ein anderer Container im Netzwerk `bridge` (z. B. ein Reverse-Proxy) die Seite
+erreichen, unter **Settings → Docker** die Option **Host access to custom networks** auf **Enabled** stellen.
 
-- **Unraid selbst erreicht die Adresse zunächst nicht.** Alle anderen Geräte im Heimnetz schon. Soll
-  der Unraid-Server oder ein anderer Container im Netzwerk `bridge` (z. B. ein Reverse-Proxy) die Seite
-  erreichen, unter **Settings → Docker** die Option **Host access to custom
-  networks** auf **Enabled** stellen.
-- **Wer den Container schon vorher eingerichtet hat:** In der Vorlage fehlt noch der Ordner „Daten“.
-  Entweder die neue Vorlage (Schritt 3) kopieren und den Container damit neu anlegen, oder im
-  bestehenden Container **Edit → Add another Path** mit Container-Pfad `/data` und Host-Pfad
-  `/mnt/user/appdata/lokal-intranet-hub` ergänzen. Ohne diesen Pfad liegt die Datenbank im Container
-  und ist bei einem Update weg.
+### Automatische Updates
+
+Der Server sieht alle **15 Minuten** auf GitHub nach, ob auf `main` ein neuer Commit liegt – oder, je nach Wahl
+unter **Einstellungen** (Knopf unten in der Seitenleiste), nur 1× am Tag nachts um 3 Uhr oder gar nicht von selbst.
+Dort holt **„Aktuellste Version ziehen“** ein Update sofort. Gibt es einen neuen Commit:
+
+1. lädt er `src/` und `server/` dieses Commits in den Daten-Ordner (`code/<commit>`),
+2. prüft, ob `server.py` fehlerfrei ist – sonst bleibt alles beim Alten und er versucht es beim nächsten Mal,
+3. startet sich mit dem neuen Code neu (dauert unter einer Sekunde; die Datenbank bleibt, wie sie ist),
+4. die offenen Seiten (Tablet, PC) merken die neue Version innerhalb einer Minute und laden sich neu –
+   aber erst, wenn eine Minute lang nichts eingegeben wurde. Noch nicht gespeicherte Einträge gehen nicht
+   verloren.
+
+Das gilt für alle drei Wege oben gleich. Nach einem Push ist die Änderung also nach spätestens etwa 16 Minuten
+überall zu sehen (bei „1× am Tag“ am nächsten Morgen, mit „Aktuellste Version ziehen“ sofort). Was sich am
+Docker-Image selbst ändert (`Dockerfile`, Python-Version), kommt nur mit einem neuen Image:
+`sudo docker compose pull && sudo docker compose up -d`, auf Unraid **Aktualisieren** im Docker-Tab bzw. das
+Plugin **CA Auto Update Applications**.
+
+**Versionsnummer:** Klein über dem Knopf **Einstellungen** steht, welcher Stand läuft, z. B. `v2026.10.29 · 20:04`.
+Das ist der Zeitpunkt des Commits (Jahr.Monat.Tag · Uhrzeit), der Commit selbst steht im Tooltip. Die Nummer entsteht
+von selbst, man muss nichts hochzählen. Mit Uhrzeit, weil oft mehrere Commits am selben Tag kommen. So sieht man
+z. B. am Wandtablet sofort, ob es schon den neuesten Stand hat.
+
+**Kein Token nötig:** Das Repository ist öffentlich, der Server holt die Updates ohne Anmeldung. GitHub erlaubt
+so 60 Anfragen pro Stunde je Internetanschluss – alle 15 Minuten nachsehen braucht davon 4.
+
+Im Log (siehe oben; Unraid: Container-Symbol → **Logs**) steht, was passiert, z. B.
+`Neue Version 3f2a1b9 von GitHub geladen – Server startet neu`. Steht dort `GitHub antwortet 404`, ist das
+Repository nicht (mehr) öffentlich oder `UPDATE_REPO` falsch; bei `403` oder `429` ist das Anfrage-Limit erreicht.
+
+Einstellungen (Umgebungsvariablen): `UPDATE_MINUTEN` (Standard `15`, `0` schaltet die Updates ab),
+`UPDATE_REPO` (im Image und in der systemd-Datei `eliasprey/Lokal-Intranet-Hub`), `UPDATE_ZWEIG` (Standard `main`).
+Lokal mit `python3 server/server.py` gibt es keine Updates, solange `UPDATE_REPO` nicht gesetzt ist.
+
+### Gut zu wissen
+
 - Die Datenbank liegt im Daten-Ordner, nicht im Container. Ein Update oder Neuaufsetzen des
   Containers löscht also nichts.
-- **Spotify** funktioniert auch unter `http://192.168.178.50` – die Anmeldung läuft über den Server
-  (siehe „Spotify einrichten“).
-- Lokal testen: `docker build -t lokal-intranet-hub . && docker run --rm -p 127.0.0.1:8080:80 -v "$PWD/daten:/data" lokal-intranet-hub`
+- **Spotify** funktioniert auch unter einer Adresse wie `http://192.168.178.50` – die Anmeldung läuft über den
+  Server (siehe „Spotify einrichten“).
+- **Feste Adresse:** Damit Tablet und Lesezeichen den Hub immer finden, dem Rechner im Router eine feste IP geben
+  (FritzBox: **Heimnetz → Netzwerk → Gerät bearbeiten → Diesem Netzwerkgerät immer die gleiche IPv4-Adresse
+  zuweisen**).
+- Image selbst bauen und testen: `docker build -t lokal-intranet-hub . && docker run --rm -p 127.0.0.1:8080:80 -v "$PWD/daten:/data" lokal-intranet-hub`
   → `http://127.0.0.1:8080`

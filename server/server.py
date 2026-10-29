@@ -329,6 +329,7 @@ def aendern(a):
 
 # ================= Updates aus dem GitHub-Repository =================
 CODE = DATENBANK.parent / 'code'           # hier landen heruntergeladene Versionen: code/<commit>/src, code/<commit>/server
+ENTPACKEN = {'filter': 'data'} if hasattr(tarfile, 'data_filter') else {}   # 'data' verhindert Pfade außerhalb des Ordners
 
 
 def github(pfad, accept):
@@ -361,8 +362,12 @@ def herunterladen(sha):
             teile = eintrag.name.split('/', 1)
             if len(teile) < 2 or not teile[1].startswith(('src/', 'server/')):
                 continue
+            # Nur normale Dateien und Ordner ohne „..“ – schützt auch dort, wo Python den Filter 'data' noch nicht
+            # kennt (z. B. Python 3.11.2 in Debian 12 / Raspberry Pi OS)
+            if not (eintrag.isfile() or eintrag.isdir()) or '..' in teile[1].split('/'):
+                continue
             eintrag.name = teile[1]
-            tar.extract(eintrag, neu, filter='data')   # 'data' verhindert Pfade außerhalb des Ordners
+            tar.extract(eintrag, neu, **ENTPACKEN)
     if not (neu / 'src' / 'index.html').is_file():
         raise ValueError('src/index.html fehlt im Repository')
     compile((neu / 'server' / 'server.py').read_text(encoding='utf-8'), 'server.py', 'exec')   # Syntaxfehler → kein Update

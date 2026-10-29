@@ -1,5 +1,5 @@
 # Lokal-Intranet-Hub: Python-Server liefert die Seite (Ordner src/) aus und speichert Termine, Urlaube
-# und Notizen in einer SQLite-Datenbank unter /data (auf Unraid z. B. /mnt/user/appdata/lokal-intranet-hub).
+# und Notizen in einer SQLite-Datenbank unter /data (bei Docker Compose ./daten, siehe docker-compose.yml).
 # Neue Commits auf GitHub holt sich der Server alle 15 Minuten selbst (siehe server/server.py).
 FROM python:3.13-alpine
 

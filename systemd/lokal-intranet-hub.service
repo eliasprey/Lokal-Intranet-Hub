@@ -1,0 +1,23 @@
+# Lokal-Intranet-Hub ohne Docker, als systemd-Dienst (Python 3.9 oder neuer, keine Zusatzpakete).
+# Einrichten (siehe README „Ohne Docker“):
+#   sudo git clone https://github.com/eliasprey/Lokal-Intranet-Hub.git /opt/lokal-intranet-hub
+#   sudo cp /opt/lokal-intranet-hub/systemd/lokal-intranet-hub.service /etc/systemd/system/
+#   sudo systemctl enable --now lokal-intranet-hub        → http://<IP dieses Rechners>:8080
+# Spotify oder anderen Port eintragen: sudo systemctl edit lokal-intranet-hub
+[Unit]
+Description=Lokal-Intranet-Hub
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 -u /opt/lokal-intranet-hub/server/server.py
+Environment=PORT=8080
+Environment=DATENBANK=/var/lib/lokal-intranet-hub/intranet.db
+Environment=UPDATE_REPO=eliasprey/Lokal-Intranet-Hub
+# Eigener Benutzer ohne Rechte; Datenbank und geladene Updates liegen in /var/lib/lokal-intranet-hub
+DynamicUser=yes
+StateDirectory=lokal-intranet-hub
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

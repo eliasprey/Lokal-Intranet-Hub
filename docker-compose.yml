@@ -1,0 +1,17 @@
+# Lokal-Intranet-Hub mit Docker Compose – für jeden Linux-Rechner mit Docker (PC, Server, NAS, Raspberry Pi).
+# Starten:  docker compose up -d   → http://<IP dieses Rechners>:8080
+# Neue Commits holt sich der Server selbst (siehe README „Automatische Updates“), das Image nur mit
+# docker compose pull && docker compose up -d
+services:
+  intranet:
+    image: ghcr.io/eliasprey/lokal-intranet-hub:latest
+    container_name: lokal-intranet-hub
+    restart: unless-stopped
+    ports:
+      - "8080:80"                   # links der Port am Rechner; "80:80" für http://<IP> ohne :8080
+    volumes:
+      - ./daten:/data               # Datenbank – diesen Ordner mit ins Backup nehmen
+    environment:
+      UPDATE_MINUTEN: "15"          # so oft auf GitHub nach neuen Commits sehen, 0 = aus
+      SPOTIFY_CLIENT_ID: ""         # optional, siehe README „Spotify einrichten“
+      SPOTIFY_CLIENT_SECRET: ""
