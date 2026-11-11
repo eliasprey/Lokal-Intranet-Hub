@@ -75,19 +75,14 @@ function setzeZiffern(el, text) {
   });
 }
 
-const tagImJahr = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(d.getFullYear(), 0, 1)) / 864e5) + 1;
-
 let lastDay = new Date().toDateString();
 function tick(neuerTag) {
   const d = new Date(Date.now() + zeitVersatz);
   const jz = jahreszeit(d), tz = tageszeit(d), kw = kalenderwoche(d);
   setzeZiffern($('time'), `${pad(d.getHours())}:${pad(d.getMinutes())}`);
   setzeZiffern($('sek'), `:${pad(d.getSeconds())}`);
-  $('uhrWochentag').textContent = d.toLocaleDateString('de-DE', { weekday: 'long' });
   $('unterzeile').textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     + ` · KW ${kw}`;
-  $('chipKw').textContent = `KW ${kw}`;
-  $('chipTag').textContent = `Tag ${tagImJahr(d)}`;
   $('chipJahreszeit').textContent = NAMEN[jz];
   $('chipTageszeit').textContent = NAMEN[bildTageszeit(d)];   // passend zum Bild
   document.body.dataset.jahreszeit = jz;

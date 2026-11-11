@@ -1,6 +1,7 @@
 /* Liniendiagramm mit Fläche für die Seite Finanzen (Kursverlauf bzw. Wert des Depots). Reines SVG, passt sich der
    Größe seines Kastens an. Mit Maus oder Finger darüberfahren zeigt Zeitpunkt und Wert.
    Die Punkte stehen gleichmäßig nebeneinander (nicht nach Uhrzeit) – Nächte und Wochenenden ohne Handel lassen so keine Lücken. */
+import { zoom } from './hilfen.js';
 const NS = 'http://www.w3.org/2000/svg';
 const RAND = { oben: 12, rechts: 14, unten: 28 };       // links richtet sich nach der Breite der Achsenbeschriftung
 let nr = 0;
@@ -105,7 +106,7 @@ export function diagramm(box) {
   const bewegt = e => {
     if (!geom || !d) return;
     const r = svg.getBoundingClientRect();
-    const anteil = (e.clientX - r.left - geom.links) / geom.breite;
+    const anteil = ((e.clientX - r.left) / zoom() - geom.links) / geom.breite;   // geom in Seiten-Pixeln
     zeiger = Math.round(Math.max(0, Math.min(1, anteil)) * (d.punkte.length - 1));
     zeigeZeiger();
   };

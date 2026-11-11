@@ -6,7 +6,6 @@ import { render, starteKalender } from './kalender.js';
 import { starteNotizen } from './notizen.js';
 import { starteShortcuts } from './shortcuts.js';
 import { starteFinanzen } from './finanzen.js';
-import { starteSuche } from './suche.js';
 import { starteWetter } from './wetter.js';
 import { starteSpotify } from './spotify.js';
 import { starteSeiten } from './seiten.js';
@@ -14,6 +13,8 @@ import { zeigeSonne } from './sonne.js';
 import { starteAktualisierung } from './aktualisierung.js';
 import { starteEinstellungen } from './einstellungsfenster.js';
 import { starteSicherheit } from './sicherheit.js';
+import { starteVollbild } from './vollbild.js';
+import { starteLeiste } from './leiste.js';
 
 starteKalender();
 zeigeSonne();
@@ -31,11 +32,12 @@ beiAenderung(zeigeHub);
 starteNotizen();
 starteFinanzen();
 starteShortcuts();
-starteSuche();
 starteWetter();
 starteSpotify();
 starteSeiten();
 starteSicherheit();
+starteVollbild();
+starteLeiste();
 starteEinstellungen();
 starteAktualisierung();                  // neue Version vom Server → Seite neu laden
 

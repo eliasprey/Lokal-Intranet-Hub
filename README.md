@@ -25,16 +25,18 @@ Lokal-Intranet-Hub/
 │  │  ├─ speicher.js       Termine, Urlaube, Notizen, Depot: Abgleich mit der Datenbank, Kopie im Browser
 │  │  ├─ uhr.js            Uhr, Datum, Begrüßung, Bild „Mein Zuhause“
 │  │  ├─ feiertage.js      Feiertage je Bundesland
-│  │  ├─ kalender.js       Kalender (Anlegen/Löschen), „Anstehend“
+│  │  ├─ kalender.js       Kalender (nur anzeigen), „Nächste 7 Tage“
 │  │  ├─ google.js         Termine aus Google Kalender (nur lesen), Fenster zum Verbinden
-│  │  ├─ notizen.js        Notiz unten im Dashboard
 │  │  ├─ wetter.js         Wetter
+│  │  ├─ notizen.js        Karte „Notiz“ im Dashboard
 │  │  ├─ spotify.js        Spotify-Player
-│  │  ├─ suche.js          Suchleiste
 │  │  ├─ finanzen.js       Seite „Finanzen“: Depot mit Live-Kursen, Suche (Aktien, ETFs, Fonds, Kryptos)
 │  │  ├─ diagramm.js       Kursdiagramm (SVG) für die Seite „Finanzen“
-│  │  ├─ einstellungsfenster.js  Fenster „Einstellungen“: Versionsverwaltung, persönliche Angaben, Intranet-Name, Sicherheit
+│  │  ├─ einstellungsfenster.js  Fenster „Einstellungen“: Versionsverwaltung, persönliche Angaben, Intranet-Name, Auflösung, Sicherheit
+│  │  ├─ aufloesung.js     Seite für FullHD, WQHD oder 3K vergrößern/verkleinern (Einstellungen → Auflösung)
 │  │  ├─ sicherheit.js     PIN für die Einstellungen, Konfiguration auf den Seiten sperren
+│  │  ├─ vollbild.js       Button oben rechts: Vollbildmodus an/aus
+│  │  ├─ leiste.js         Seitenleiste ein-/ausklappen (nur Symbole), gilt nur für dieses Gerät
 │  │  └─ shortcuts.js      Seite „Shortcuts“: Kacheln anlegen, ändern, entfernen
 │  └─ assets/backgrounds/  16 Hintergrundbilder, benannt nach <jahreszeit>_<tageszeit>.jpg
 ├─ Dockerfile              baut das Docker-Image (Python + Seite, Datenbank unter /data)
@@ -50,18 +52,18 @@ Lokal-Intranet-Hub/
 
 Dunkles Dashboard mit Seitenleiste. Es gibt fünf Seiten: **Finanzen | Kalender | Dashboard | Shortcuts | Smarthome**. Gewechselt
 wird über das Menü links, die Pfeile oben rechts, die Pfeiltasten ← → oder durch Wischen (Touch).
-Kopfzeile (Begrüßung, Suche) bleibt immer stehen.
+Kopfzeile (Begrüßung, Vollbild, Sync, Pfeile) bleibt immer stehen.
 
 ```
 ┌────────┬──────────────────────────────────────────────────────────────┐
-│ Logo   │ Guten Tag, Elias ☀ (groß)  [ Suche …          / ]   ☁  ‹ ›   │
+│ Logo   │ Guten Tag, Elias ☀ (groß)                         ⛶ ☁  ‹ ›   │
 │        │ Montag, 12. Oktober 2026 · KW 42                             │
 │ ▣ Dash │ [Außen] [Heute] [Wind] [Luftfeuchte] [Regen]                 │
-│ ▣ Kal. │ ┌ Mein Zuhause (Bild) ───────────┐ ┌ Spotify ──────────────┐ │
+│ ▣ Kal. │ ┌ 14:05:32 (Bild) ────────── Ort ┐ ┌ Spotify ──────────────┐ │
 │ ▣ Fin. │ │                                │ │ ▣ Titel     ⏮ ▶ ⏭     │ │
 │ ▣ Short│ └ Herbst · Mittag  ↑07:25 ↓18:29 ┘ └───────────────────────┘ │
-│ ▣ Smart│ [Wettervorschau für Ort · 7 Tage] [Uhrzeit] [Anstehend]      │
-│ ⚙ Einst│ Notiz [ hier direkt eintippen …                         ]    │
+│ ▣ Smart│ [Wetter · 7 Tage]    [Nächste 7 Tage]    [Notiz]             │
+│ ⚙ Einst│                                                              │
 └────────┴──────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,13 +74,19 @@ Kopfzeile (Begrüßung, Suche) bleibt immer stehen.
 | Hochformat oder unter 1000 px | Karten untereinander, die Seite scrollt |
 | unter 600 px | Menü als Leiste unten (Handy) |
 
+**Auflösung (Einstellungen → Auflösung):** Die Seite ist für WQHD (2560 × 1440, Skalierung 100 %) gebaut.
+Wählt man an einem Gerät FullHD oder WQXGA+ / 3K, wird die ganze Seite so vergrößert oder verkleinert, dass sie
+genauso aussieht wie auf WQHD – gleich breit, bei 16:10 unten etwas mehr Platz. Die Skalierung des Betriebssystems
+wird herausgerechnet. Die Wahl gilt nur für dieses Gerät (sie liegt im Browser); am Tablet „Keine Anpassung“ lassen.
+
 ## Was macht der Code? (grob)
 
 - **Mein Zuhause** (`uhr.js`): Je nach Jahreszeit und Tageszeit wird das passende Bild in der Karte
   „Mein Zuhause“ geladen und weich überblendet. Ab Sonnenuntergang kommt immer das Nachtbild (im Winter also
   schon am Nachmittag); bis dahin höchstens das Abendbild.
-- **Uhr & Datum** (`uhr.js`): Wird jede Sekunde aktualisiert; die Sekunden laufen im Ring der Karte
-  „Uhrzeit“. Zeigt außerdem Kalenderwoche, Tag im Jahr und die Begrüßung („Guten Morgen, Anna“ usw., Name aus den Einstellungen).
+- **Uhr & Datum** (`uhr.js`): Wird jede Sekunde aktualisiert; die Uhrzeit steht groß oben links im Bild
+  „Mein Zuhause“, jede Ziffer rollt beim Wechsel. Zeigt außerdem die Begrüßung
+  („Guten Morgen, Anna“ usw., Name aus den Einstellungen) mit Datum und Kalenderwoche darunter.
 - **Sonnenzeiten** (`sonne.js`): Sonnenauf- und -untergang für den Ort aus den Einstellungen, selbst berechnet. Stehen
   unten rechts im Bild „Mein Zuhause“.
 - **Feiertage** (`feiertage.js`): Die gesetzlichen Feiertage des Bundeslands, das in den Einstellungen beim Ort
@@ -86,15 +94,11 @@ Kopfzeile (Begrüßung, Suche) bleibt immer stehen.
   und der Buß- und Bettag; in Augsburg kommt das Friedensfest dazu.
 - **Seiten** (`seiten.js`): Blättert zwischen Finanzen, Kalender, Dashboard, Shortcuts und Smarthome – über das Menü, die Pfeile,
   die Pfeiltasten oder Wischen (die Seite folgt dem Finger).
-- **Kalender** (`kalender.js`): Große Monatsansicht auf eigener Seite mit Kalenderwochen, Feiertagen,
-  Urlaub und Terminen. Man kann mehrere Tage oder einen Zeitraum (erster Tag → späterer Tag) auswählen
-  und dafür auf einmal einen Termin oder Urlaub anlegen – oder mit „Einträge löschen“ alle Termine und Urlaube
-  dieser Tage entfernen (nach Rückfrage, die alles auflistet).
+- **Kalender** (`kalender.js`): Große Monatsansicht auf eigener Seite mit Kalenderwochen, Feiertagen
+  und den Terminen aus Google Kalender. Nur zum Anzeigen – Termine werden in Google angelegt und geändert.
 - **Google Kalender** (`google.js`, Abruf in `server.py`): Termine aus den eigenen Google Kalendern erscheinen
-  lila im Kalender und unter „Anstehend“ (nur anzeigen – ändern weiter in Google). Einrichtung siehe unten.
-- **Anstehend** (`kalender.js`): Dashboard-Karte mit allem, was von heute bis in 6 Tagen ansteht.
-- **Notiz** (`notizen.js`): Textfeld ganz unten im Dashboard – einfach hineintippen, es wird automatisch
-  gespeichert und ist auf allen Geräten gleich. Das Feld wächst bis 4 Zeilen mit.
+  lila im Kalender und unter „Nächste 7 Tage“ (nur anzeigen – ändern weiter in Google). Einrichtung siehe unten.
+- **Nächste 7 Tage** (`kalender.js`): Dashboard-Karte mit allem, was von heute bis in 6 Tagen ansteht.
 - **Finanzen** (`finanzen.js`, Diagramm in `diagramm.js`, Kurse über `server.py`): Rechts zwei Reiter.
   Unter **Hinzufügen** nach Aktien, ETFs, Fonds oder Kryptos suchen (Name, Börsenkürzel, ISIN oder z. B. „Bitcoin“ –
   WKN kennt Yahoo nicht), einen Treffer antippen, Stückzahl (bis 8 Nachkommastellen) und optional den Einkaufskurs pro
@@ -117,11 +121,13 @@ Kopfzeile (Begrüßung, Suche) bleibt immer stehen.
   oder Entfernen. Die Liste liegt in der Datenbank und gilt auf allen Geräten. Beim allerersten Start stehen
   Google Kalender und Gmail drin. Das Symbol (Mail, Kalender, Router, Drucker, Cloud …) wird am Namen erkannt.
 - **Smarthome**: Eigene Seite ganz rechts, noch ohne Inhalt.
-- **Wetter** (`wetter.js`): Aktuelles Wetter für den Ort aus den Einstellungen in den Kacheln oben (Temperatur,
-  Höchst/Tiefst, Wind, Luftfeuchte, Regenrisiko) und eine Vorschau für heute und die nächsten 6 Tage (7 Tage):
+- **Wetter** (`wetter.js`): Aktuelles Wetter für den Ort aus den Einstellungen in den Kacheln ganz oben (Temperatur,
+  Höchst/Tiefst, Wind, Luftfeuchte, Regenrisiko) und in der Karte „Wetter“ eine Vorschau für heute und die nächsten 6 Tage (7 Tage):
   je Tag ein Balken von Tiefst- bis Höchstwert, dazu die Regenwahrscheinlichkeit (ab 10 %). Die Daten stammen vom Deutschen Wetterdienst (DWD) und kommen
   kostenlos und ohne Anmeldung über <https://brightsky.dev>. Sie werden alle 15 Minuten neu geladen und
   im Browser zwischengespeichert, damit nach dem Neuladen sofort etwas dasteht.
+- **Notiz** (`notizen.js`): Freies Textfeld in der Karte „Notiz“ unten im Dashboard. Wird beim Tippen automatisch
+  in der Datenbank gespeichert und gilt auf allen Geräten.
 - **Spotify** (`spotify.js`, Anmeldung in `server.py`): Einmal mit dem Spotify-Konto anmelden, dann steuern
   alle Geräte dasselbe Konto – auch über `http://`. Der Player zeigt, was gerade läuft (großes Cover, Titel,
   Fortschritt), rechts daneben die laufende Playlist bzw. das Album zum Durchscrollen – antippen spielt ab diesem
@@ -129,7 +135,6 @@ Kopfzeile (Begrüßung, Suche) bleibt immer stehen.
   quer, bleibt die Liste weg). Abspielen/Pause, vor/zurück, springen, Lautstärke und Wiedergabegerät wählen. Über „Musik“
   öffnet sich ein Fenster zum Suchen von Liedern und mit den eigenen Playlists. Ein gesuchtes Lied wird im
   zugehörigen Album weitergespielt. Einrichtung siehe unten.
-- **Suche** (`suche.js`): Sucht bei Google. Adressen wie `wetter.de` oder IP-Adressen werden direkt geöffnet.
 - **Einstellungen** (`einstellungsfenster.js`): Knopf unten in der Seitenleiste (nicht auf dem Handy), vier Reiter:
   - **Versionsverwaltung:** „Aktuellste Version ziehen“ holt sofort die neueste Version von GitHub; darunter wählt
     man, wie oft der Server das von selbst tut: alle 15 Minuten, 1× am Tag (nachts um 3 Uhr) oder aus.
@@ -140,7 +145,7 @@ Kopfzeile (Begrüßung, Suche) bleibt immer stehen.
     5-stelligen PIN. Geprüft wird auf dem Server, in der Datenbank liegt nur ein Hash; nach 5 falschen Versuchen
     gibt es 5 Minuten Pause. **Konfiguration sperren** – auf den Seiten lässt sich dann nichts mehr einrichten:
     Depot (Finanzen), Shortcuts, Google Kalender verbinden/entfernen und Spotify an-/abmelden. Die Knöpfe dafür
-    verschwinden, und der Server lehnt solche Änderungen ab. Termine, Urlaube, Notizen und Musik gehen weiter.
+    verschwinden, und der Server lehnt solche Änderungen ab. Musik geht weiter.
     Ohne PIN kann jeder die Sperre in den Einstellungen wieder aufheben.
   Alles davon liegt in der Datenbank und gilt auf allen Geräten.
 - **Tablet** (`main.js`): Große Tippflächen, Seitenwechsel durch Wischen. Nach dem Sperren und
@@ -158,14 +163,12 @@ unter `/data`, siehe [Installation auf Linux](#installation-auf-linux)). Jedes G
   automatisch nachgeholt. **Grau „Nur lokal“** = Seite ohne Server geöffnet (z. B. mit Live Server).
 - Jeder Browser behält eine Kopie, damit die Seite sofort etwas zeigt. Die Kopie wird bei jedem Abgleich
   durch den Stand der Datenbank ersetzt.
-- Bei den Notizen gilt: Die letzte Änderung gewinnt. Tippen zwei Geräte gleichzeitig, bleibt der Text
-  des Geräts, auf dem zuletzt getippt wurde.
 - **Umstieg:** Was ein Gerät vor der Datenbank gespeichert hatte, schickt es beim ersten Öffnen einmalig
   an den Server. Termine und Urlaube kommen dazu, alte Notizen werden an die vorhandenen angehängt.
   Überschrieben wird nichts.
 
 Auch die **Spotify-Anmeldung** liegt auf dem Server und gilt für alle Geräte. Nur die
-zwischengespeicherten Wetterdaten bleiben pro Gerät.
+zwischengespeicherten Wetterdaten und die gewählte **Auflösung** bleiben pro Gerät.
 
 **Sicherung:** Den Daten-Ordner mit ins Backup nehmen – bei Docker Compose `daten/` neben der
 `docker-compose.yml`, ohne Docker `/var/lib/lokal-intranet-hub`, auf Unraid `/mnt/user/appdata/lokal-intranet-hub`.
@@ -181,8 +184,7 @@ Einträge ändern. Die Seite deshalb nicht ungeschützt ins Internet stellen.
 | Kacheln auf der Seite „Shortcuts“ | auf der Seite selbst: „Shortcut hinzufügen“ / „Shortcuts bearbeiten“ |
 | Spotify-App (Client-ID, Client-Secret) | Container-Variablen `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` |
 | Name, Ort (Wetter, Sonne, Feiertage), Name des Intranets | Einstellungen → Persönliche Angaben / Intranet-Name |
-| Anzahl Tage in der Wettervorschau | `WETTER_TAGE` in `src/js/einstellungen.js` |
-| Suchmaschine | `SUCHMASCHINE` in `src/js/einstellungen.js` |
+| Anzahl Tage in der Karte „Wetter“ | `WETTER_TAGE` in `src/js/einstellungen.js` |
 | Wie oft die Börsenkurse neu geholt werden | `LIVE_ALLE_SEK` (aktueller Kurs), `KURSE_ALLE_MIN` (Verlauf) in `src/js/einstellungen.js` |
 | Uhrzeiten für Morgen / Mittag / Abend / Nacht | `ZEITEN` in `src/js/einstellungen.js` |
 | Begrüßungstexte | `GRUSS` in `src/js/einstellungen.js` |

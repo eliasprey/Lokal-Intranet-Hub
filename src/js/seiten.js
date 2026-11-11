@@ -1,8 +1,9 @@
 /* Seiten nebeneinander (Finanzen | Kalender | Dashboard | Shortcuts | Smarthome).
    Wechsel über das Menü (alles mit data-seite), die Pfeile oben, die Pfeiltasten oder per Wischen am Touchscreen. */
-import { $ } from './hilfen.js';
+import { $, zoom } from './hilfen.js';
 
 const START = 2;                         // die mittlere Seite (Dashboard) ist die Startseite
+const RUECKKEHR_MS = 60_000;             // so lange ohne Eingabe, dann zurück zur Startseite
 
 export function starteSeiten() {
   const leiste = $('seiten'), seiten = [...leiste.children];
@@ -42,6 +43,17 @@ export function starteSeiten() {
     else if (e.key === 'ArrowRight') zeige(aktuell + 1);
   });
 
+  /* Nach einer Minute ohne Eingabe zurück zum Dashboard – außer ein Fenster ist offen, dann weiter warten */
+  let ruhe;
+  const ruheNeu = () => { clearTimeout(ruhe); ruhe = setTimeout(zurueck, RUECKKEHR_MS); };
+  function zurueck() {
+    if (document.querySelector('dialog[open]')) return ruheNeu();
+    if (aktuell !== START) zeige(START);
+  }
+  ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'].forEach(t =>
+    document.addEventListener(t, ruheNeu, { passive: true, capture: true }));
+  ruheNeu();
+
   /* Wischen: die Seite folgt dem Finger, beim Loslassen wird umgeblättert oder zurückgeschnappt.
      Senkrechtes Wischen bleibt normales Scrollen; Schieberegler (Spotify) und das Diagramm (Finanzen) werden nicht gestört. */
   let startX = 0, startY = 0, startZeit = 0, dx = 0, richtung = null;   // richtung: null = noch offen, 'x' = blättern, 'y' = scrollen
@@ -58,7 +70,7 @@ export function starteSeiten() {
       richtung = Math.abs(x) > Math.abs(y) ? 'x' : 'y';
       if (richtung === 'y') return;
     }
-    dx = x;
+    dx = x / zoom();                        // Finger in echten Pixeln, Verschiebung in Seiten-Pixeln
     const amRand = (aktuell === 0 && dx > 0) || (aktuell === seiten.length - 1 && dx < 0);
     if (amRand) dx /= 3;                    // am Ende gebremst nachgeben
     leiste.style.transition = 'none';
@@ -69,7 +81,7 @@ export function starteSeiten() {
     if (richtung !== 'x') { richtung = null; return; }
     richtung = null;
     // weit genug gezogen oder kurz und schnell geschnippt
-    const schwelle = Date.now() - startZeit < 300 ? 40 : Math.min(120, innerWidth * 0.15);
+    const schwelle = Date.now() - startZeit < 300 ? 40 : Math.min(120, innerWidth * 0.15 / zoom());
     zeige(dx < -schwelle ? aktuell + 1 : dx > schwelle ? aktuell - 1 : aktuell);
   };
   leiste.addEventListener('touchend', ende);

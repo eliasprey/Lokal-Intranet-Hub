@@ -2,7 +2,7 @@
    dasselbe Spotify-Konto, auch wenn die Seite über http:// läuft. Abgespielt wird auf einem Spotify-Gerät
    (App auf Handy, Tablet oder PC, Lautsprecher …). Alle Befehle gehen über den Server an die Spotify Web API.
    Einrichtung siehe README. */
-import { $, pad, klickDanebenSchliesst } from './hilfen.js';
+import { $, pad, klickDanebenSchliesst, zoom } from './hilfen.js';
 import { beiAenderung } from './speicher.js';
 import { gesperrt } from './sicherheit.js';
 const SP_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>';
@@ -196,7 +196,7 @@ function spListeMarkieren() {
   const z = jetzt && [...box.children].find(e => e.dataset.uri === jetzt);
   if (!z) return;
   z.classList.add('on');
-  const oben = box.scrollTop + z.getBoundingClientRect().top - box.getBoundingClientRect().top;
+  const oben = box.scrollTop + (z.getBoundingClientRect().top - box.getBoundingClientRect().top) / zoom();
   box.scrollTo({ top: oben - box.clientHeight / 3, behavior: 'smooth' });
 }
 const spBald = () => [500, 1500].forEach(t => setTimeout(spAktualisieren, t));   // Spotify braucht kurz, bis der neue Stand da ist

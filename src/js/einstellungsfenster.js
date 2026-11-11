@@ -1,9 +1,10 @@
-/* Fenster „Einstellungen“ (Knopf unten in der Seitenleiste) mit vier Reitern:
+/* Fenster „Einstellungen“ (Knopf unten in der Seitenleiste) mit fünf Reitern:
    - Versionsverwaltung: die neueste Version von GitHub sofort holen und einstellen, wie oft der Server das von selbst tut
      (alle paar Minuten, 1× am Tag nachts oder gar nicht). Die Updates selbst macht der Server (server.py); die Seite lädt
      sich danach neu.
    - Persönliche Angaben: Name für die Begrüßung und der Ort (Wetter, Sonnenzeiten, Feiertage des Bundeslands).
    - Intranet-Name: steht oben links.
+   - Auflösung: Seite für FullHD, WQHD oder 3K vergrößern/verkleinern (aufloesung.js) – nur für dieses Gerät, liegt im Browser.
    - Sicherheit: PIN für dieses Fenster und Konfiguration auf den Seiten sperren (sicherheit.js).
    Name, Ort, Intranet-Name und Sicherheit liegen in der Datenbank (speicher.js) und gelten auf allen Geräten. */
 import { $, klickDanebenSchliesst } from './hilfen.js';
@@ -102,6 +103,47 @@ async function modus(m) {
 function reiter(name) {
   document.querySelectorAll('#einstellungen .es-reiter').forEach(e => { e.hidden = e.dataset.reiter !== name; });
   document.querySelectorAll('#esTabs button').forEach(b => b.classList.toggle('on', b.dataset.reiter === name));
+  obenFestlegen();
+}
+
+/* Oberkante fest: das Fenster steht dort, wo es mit dem höchsten Reiter mittig stünde –
+   kleinere Reiter werden nur nach unten kürzer, statt beim Umschalten zu springen.
+   Gemessen wird, indem die verborgenen Reiter kurz mit eingeblendet werden (im selben Takt, also ohne Flackern;
+   der aktive Reiter bleibt sichtbar, damit ein Eingabefeld den Fokus nicht verliert). */
+function obenFestlegen() {
+  const fenster = $('einstellungen');
+  if (!fenster.open) return;
+  const alle = [...fenster.querySelectorAll('.es-reiter')];
+  const aktiv = alle.find(e => !e.hidden);
+  if (!aktiv) return;
+  const rand = fenster.offsetHeight - fenster.clientHeight;
+  const ohneReiter = fenster.scrollHeight + rand - aktiv.offsetHeight;   // Kopf, Reiterleiste, Innenabstand, Rahmen
+  const scroll = fenster.scrollTop;
+  const verborgen = alle.filter(e => e.hidden);
+  verborgen.forEach(e => { e.hidden = false; });
+  const hoechster = Math.max(...alle.map(e => e.offsetHeight));
+  verborgen.forEach(e => { e.hidden = true; });
+  fenster.scrollTop = scroll;
+  // Alles in Seiten-Pixeln, die auch zoom (Einstellungen → Auflösung) kennen: body ist so hoch wie das Browserfenster,
+  // innerHeight dagegen zählt echte Pixel. Höchstens 85 % bzw. 720 px wie max-height in style.css
+  const fensterHoehe = document.body.offsetHeight;
+  const hoehe = Math.min(ohneReiter + hoechster, fensterHoehe * 0.85, 720);
+  fenster.style.marginTop = Math.max(0, (fensterHoehe - hoehe) / 2) + 'px';
+  fenster.style.marginBottom = 'auto';
+}
+
+/* ================= Auflösung (aufloesung.js, gilt nur für dieses Gerät) ================= */
+function aufloesungZeigen() {
+  const a = window.aufloesung, wahl = a.wahl(), e = a.erkannt();
+  document.querySelectorAll('#esAufloesung button').forEach(b => b.classList.toggle('on', b.dataset.aufloesung === wahl));
+  const geraet = `Dieser Bildschirm meldet ${e.breite} × ${e.hoehe} bei ${e.skalierung} % Skalierung`
+    + (e.passt ? ` – das ist ${a.LISTE[e.passt].name}.` : '.');
+  $('esAufloesungInfo').textContent = geraet + (wahl ? ` Größe der Seite jetzt: ${Math.round(a.faktor() * 100)} %.` : '');
+}
+function aufloesungSetzen(wahl) {
+  window.aufloesung.setzen(wahl);
+  aufloesungZeigen();
+  obenFestlegen();                                // anderer zoom: das Browserfenster ist in Seiten-Pixeln anders hoch
 }
 
 /* ================= Persönliche Angaben ================= */
@@ -180,7 +222,7 @@ function sicherheitZeigen() {
     : 'Aus – jeder kann die Einstellungen öffnen.';
   $('esPin').textContent = an ? 'PIN ausschalten' : 'PIN einschalten';
   $('esSperreInfo').textContent = (gesperrt
-    ? 'Gesperrt – Depot, Shortcuts, Google Kalender und die Spotify-Anmeldung lassen sich auf den Seiten nicht ändern. Termine, Notizen und Musik gehen weiter.'
+    ? 'Gesperrt – Depot, Shortcuts, Google Kalender und die Spotify-Anmeldung lassen sich auf den Seiten nicht ändern. Musik geht weiter.'
     : 'Offen – auf den Seiten lässt sich alles einrichten.')
     + (an ? '' : ' Ohne PIN kann jeder die Sperre hier wieder aufheben.');
   $('esSperre').textContent = gesperrt ? 'Sperre aufheben' : 'Konfiguration sperren';
@@ -214,6 +256,7 @@ function formulareFuellen() {
   $('esPersonMeldung').textContent = $('esHubMeldung').textContent = '';
   ortZeigen();
   sicherheitMeldung(''); sicherheitZeigen();
+  aufloesungZeigen();
 }
 
 export function starteEinstellungen() {
@@ -238,8 +281,13 @@ export function starteEinstellungen() {
     if (!warteAufUpdate) meldung('');
     formulareFuellen();
     reiter('version');                            // beim Öffnen immer die Versionsverwaltung
-    fenster.showModal(); holen();
+    fenster.showModal(); obenFestlegen(); holen();
   };
+  // Inhalt ändert sich (Versionsdaten geladen, Meldungen, Ortsliste) oder das Browserfenster: neu ausrichten
+  const beobachter = new ResizeObserver(() => obenFestlegen());
+  beobachter.observe(fenster);
+  document.querySelectorAll('#einstellungen .es-reiter').forEach(e => beobachter.observe(e));
+  addEventListener('resize', obenFestlegen);
   $('einstellungenZu').onclick = () => fenster.close();
   fenster.addEventListener('close', () => { pin = ''; });
   klickDanebenSchliesst(fenster);
@@ -248,4 +296,6 @@ export function starteEinstellungen() {
   beiAenderung(sicherheitZeigen);
   $('esZiehen').onclick = ziehen;
   document.querySelectorAll('#esModus button').forEach(b => { b.onclick = () => modus(b.dataset.modus); });
+  document.querySelectorAll('#esAufloesung button').forEach(b => { b.onclick = () => aufloesungSetzen(b.dataset.aufloesung); });
+  addEventListener('resize', () => { if (fenster.open) aufloesungZeigen(); });   // Fenster auf anderen Bildschirm geschoben
 }

@@ -12,6 +12,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<script src="js/aufloesung.js"></script>     <!-- Auflösung dieses Geräts: vor dem ersten Zeichnen anwenden -->
+<script>  /* Seitenleiste eingeklappt? (leiste.js) – schon vor dem ersten Zeichnen, damit nichts springt */
+  try { if (localStorage.getItem('intranet.leiste.v1') === 'zu') document.documentElement.classList.add('leiste-zu'); } catch (e) {}
+</script>
 </head>
 <body>
 
@@ -23,17 +27,17 @@
       <div><b id="hubName">Intranet</b><small>Zuhause</small></div>
     </div>
     <nav class="menue">
-      <button data-seite="2">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        <span>Dashboard</span>
+      <button data-seite="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/><path d="M15 8h5v5"/></svg>
+        <span>Finanzen</span>
       </button>
       <button data-seite="1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
         <span>Kalender</span>
       </button>
-      <button data-seite="0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/><path d="M15 8h5v5"/></svg>
-        <span>Finanzen</span>
+      <button data-seite="2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Dashboard</span>
       </button>
       <button data-seite="3">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 4 14h7l-1 7 9-11h-7z"/></svg>
@@ -45,6 +49,10 @@
       </button>
     </nav>
     <div class="leiste-unten">
+    <button class="einklappen-btn" id="einklappenBtn" title="Seitenleiste einklappen" aria-label="Seitenleiste einklappen" aria-expanded="true">   <!-- leiste.js -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="m16 10-2 2 2 2"/></svg>
+      <span>Einklappen</span>
+    </button>
     <small class="app-version" id="appVersion" hidden></small>   <!-- aktualisierung.js -->
     <button class="einstellungen-btn" id="einstellungenBtn" title="Einstellungen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -54,21 +62,18 @@
   </aside>
 
   <div class="haupt">
-    <!-- Kopf: Begrüßung, Suche, Blättern -->
+    <!-- Kopf: Begrüßung | Vollbild, Sync, Blättern -->
     <header class="kopf">
       <div class="kopf-gruss">
         <h1><span id="gruss"></span> <span class="gruss-icon w-icon" id="grussIcon"></span></h1>
         <p id="unterzeile"></p>
       </div>
-      <form class="suche" id="suche" role="search">
-        <svg class="lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
-        <input type="search" id="suchText" placeholder="Im Web suchen oder Adresse eingeben …" autocomplete="off" aria-label="Suche">
-        <button type="button" class="leeren" id="suchLeeren" aria-label="Eingabe löschen" title="Eingabe löschen" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-        </button>
-        <kbd>/</kbd>
-      </form>
       <div class="kopf-rechts">
+        <!-- Vollbild an/aus (vollbild.js); ohne Vollbild-Unterstützung im Browser (z. B. iPhone) ausgeblendet -->
+        <button type="button" class="vollbild" id="vollbild" aria-label="Vollbild" title="Vollbild" hidden>
+          <svg class="vb-an" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+          <svg class="vb-aus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>
+        </button>
         <span class="sync" id="sync" data-zustand="verbinde">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 18.5h9.5a4 4 0 0 0 0-8h-.3A5.5 5.5 0 0 0 6 11.5a3.5 3.5 0 0 0 1.5 7z"/></svg>
           <span id="syncText"></span>
@@ -159,16 +164,7 @@
               </div>
             </div>
             <div class="grid" id="grid"></div>
-            <div class="legende"><span class="l-f">Feiertag</span><span class="l-u">Urlaub</span><span class="l-t">Termin</span><span class="l-g">Google</span></div>
-            <div class="mehrfach" id="mehrfach">
-              <span id="selCount"></span>
-              <select id="mArt" aria-label="Art"><option value="termin">Termin</option><option value="urlaub">Urlaub</option></select>
-              <input type="time" id="mTime" aria-label="Uhrzeit">
-              <input type="text" id="mText" placeholder="Titel …" maxlength="80">
-              <button id="mAdd" class="primary" disabled>Anlegen</button>
-              <button id="mLoeschen" class="loeschen" disabled>Einträge löschen</button>
-              <button id="mClear">Auswahl aufheben</button>
-            </div>
+            <div class="legende"><span class="l-f">Feiertag</span><span class="l-g">Google</span></div>
           </section>
         </section>
 
@@ -193,6 +189,8 @@
               <div class="bg active" id="bgA"><div class="main"></div></div>
               <div class="bg" id="bgB"><div class="main"></div></div>
               <div class="zuhause-kopf">
+                <!-- Uhrzeit oben links im Bild: jede Ziffer rollt beim Wechsel (uhr.js) -->
+                <div class="uhr-zeit" aria-label="Uhrzeit"><b id="time"></b><span id="sek"></span></div>
                 <small id="zuhauseOrt"></small>
               </div>
               <div class="zuhause-chips"><span class="chip jz" id="chipJahreszeit"></span><span class="chip" id="chipTageszeit"></span></div>
@@ -261,28 +259,20 @@
 
           <div class="dash-unten">
             <section class="karte wetter-karte">
-              <div class="karte-kopf"><h3>Wettervorschau</h3><small id="wetterStand"></small></div>
+              <div class="karte-kopf"><h3>Wetter</h3><small id="wetterStand"></small></div>
               <div class="wetter-tage" id="wetterTage"></div>
             </section>
-            <section class="karte uhr-karte">
-              <div class="karte-kopf"><h3>Uhrzeit</h3><small id="uhrWochentag"></small></div>
-              <div class="uhr-mitte">
-                <div class="uhr-zeit"><b id="time"></b><span id="sek"></span></div>
-              </div>
-              <div class="uhr-chips"><span class="chip" id="chipKw"></span><span class="chip" id="chipTag"></span></div>
-            </section>
             <section class="karte anstehend-karte">
-              <div class="karte-kopf"><h3>Anstehend</h3><small id="anstehendAnzahl"></small></div>
+              <div class="karte-kopf"><h3>Nächste 7 Tage</h3><small id="anstehendAnzahl"></small></div>
               <ul id="anstehend"></ul>
+            </section>
+            <!-- Notiz: direkt hier eintippen, wird automatisch gespeichert (notizen.js) -->
+            <section class="karte notiz-karte">
+              <div class="karte-kopf"><h3><label for="notizText">Notiz</label></h3><small id="notizStatus">Gespeichert</small></div>
+              <textarea id="notizText" placeholder="Hier eine Notiz hinterlassen …" spellcheck="true"></textarea>
             </section>
           </div>
 
-          <!-- Notiz: direkt hier eintippen, wird automatisch gespeichert (notizen.js) -->
-          <label class="karte fusszeile">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>
-            <span class="notiz-titel"><b>Notiz</b><small id="notizStatus">Gespeichert</small></span>
-            <textarea id="notizText" rows="1" placeholder="Hier eine Notiz hinterlassen …" spellcheck="true"></textarea>
-          </label>
         </section>
 
         <!-- Shortcuts: Links zu den Geräten im Heimnetz, Google usw. – Liste in der Datenbank (shortcuts.js) -->
@@ -335,6 +325,7 @@
     <button data-reiter="version">Versionsverwaltung</button>
     <button data-reiter="person">Persönliche Angaben</button>
     <button data-reiter="hub">Intranet-Name</button>
+    <button data-reiter="aufloesung">Auflösung</button>
     <button data-reiter="sicherheit">Sicherheit</button>
   </div>
 
@@ -387,7 +378,23 @@
     <div class="formular-knoepfe"><button type="submit" class="primary">Speichern</button></div>
   </form>
 
-  <!-- Reiter 4: PIN für die Einstellungen, Konfiguration auf den Seiten sperren (sicherheit.js) -->
+  <!-- Reiter 4: Auflösung dieses Bildschirms – gilt nur für dieses Gerät (aufloesung.js) -->
+  <div class="es-reiter" data-reiter="aufloesung" hidden>
+    <section class="es-abschnitt">
+      <h4>Auflösung dieses Bildschirms</h4>
+      <p class="es-info">Die Seite wird so vergrößert oder verkleinert, dass sie aussieht wie auf dem WQHD-Bildschirm.
+        Gilt nur für dieses Gerät.</p>
+      <div class="es-aufloesung" id="esAufloesung">
+        <button data-aufloesung="fullhd">FullHD <small>1920 × 1080</small></button>
+        <button data-aufloesung="wqhd">WQHD <small>2560 × 1440</small></button>
+        <button data-aufloesung="3k">WQXGA+ / 3K <small>2880 × 1800</small></button>
+        <button data-aufloesung="">Keine Anpassung <small>z. B. Tablet, Handy</small></button>
+      </div>
+      <p class="es-info" id="esAufloesungInfo"></p>
+    </section>
+  </div>
+
+  <!-- Reiter 5: PIN für die Einstellungen, Konfiguration auf den Seiten sperren (sicherheit.js) -->
   <div class="es-reiter" data-reiter="sicherheit" hidden>
     <section class="es-abschnitt">
       <h4>PIN für die Einstellungen</h4>

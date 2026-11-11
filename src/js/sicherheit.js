@@ -3,7 +3,7 @@
      der nur einen Hash kennt – der PIN selbst wird nirgends im Browser gespeichert.
    - Konfiguration sperren: Auf den Seiten lässt sich nichts mehr einrichten (Depot, Shortcuts, Google Kalender,
      Spotify-Anmeldung). Die Knöpfe dafür verschwinden (Klasse konfig-gesperrt am <body>, siehe style.css), und der
-     Server lehnt solche Änderungen ab. Termine, Notizen und Musik bleiben bedienbar.
+     Server lehnt solche Änderungen ab. Musik bleibt bedienbar.
    Beides liegt in der Datenbank und gilt auf allen Geräten. */
 import { $, klickDanebenSchliesst } from './hilfen.js';
 import { daten, beiAenderung, sicherheitSetzen } from './speicher.js';

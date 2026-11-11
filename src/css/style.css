@@ -1,7 +1,7 @@
 :root {
   --bg: #0a0f1a;                     /* Seitenhintergrund */
-  --karte: #111a2b;                  /* Karten */
-  --karte-hell: #18233a;             /* Zeilen und Felder in Karten */
+  --karte: #1b2742;                  /* Karten */
+  --karte-hell: #253352;             /* Zeilen und Felder in Karten */
   --bronze: #cd7f32;                 /* Rahmen und Begrüßung */
   --rand: rgba(205, 127, 50, 0.4);
   --rand-hell: rgba(205, 127, 50, 0.75);   /* Rahmen bei Hover und aktiv */
@@ -39,7 +39,7 @@ ul { list-style: none; }
 button { font: inherit; color: var(--text); background: var(--karte-hell); border: 1px solid var(--rand);
   border-radius: 10px; padding: 7px 12px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 @media (hover: hover) { button:hover { border-color: var(--rand-hell); } }
-button:active { background: #213052; }
+button:active { background: #2e3f63; }
 button.on { background: var(--accent-weich); border-color: var(--rand-hell); }
 button:disabled { opacity: .4; cursor: default; }
 input, select, textarea { font: inherit; color: var(--text); background: var(--karte-hell); border: 1px solid var(--rand);
@@ -73,16 +73,33 @@ input[type=range] { accent-color: var(--accent); padding: 0; border: none; backg
   font-weight: 500; color: var(--muted); background: none; border-color: var(--rand); text-align: left; }
 .einstellungen-btn svg { flex: none; width: 34px; height: 34px; }
 @media (hover: hover) { .einstellungen-btn:hover { color: var(--text); background: var(--karte-hell); } }
+/* Einklappen: wie ein Menü-Reiter, aber kleiner und ohne Rand (leiste.js) */
+.einklappen-btn { display: flex; align-items: center; gap: 16px; padding: 8px 16px; font-size: 18px; font-weight: 500;
+  color: var(--muted); background: none; border-color: transparent; text-align: left; }
+.einklappen-btn svg { flex: none; width: 28px; height: 28px; }
+@media (hover: hover) { .einklappen-btn:hover { color: var(--text); background: var(--karte-hell); border-color: transparent; } }
+
+/* Eingeklappt: schmale Leiste nur mit Symbolen wie unter 1400 px; nicht am Handy (dort ist das Menü unten) */
+@media (min-width: 600px) {
+  .leiste-zu .app { grid-template-columns: 100px minmax(0, 1fr); }
+  .leiste-zu .leiste { align-items: center; padding: 22px 12px; }
+  .leiste-zu .logo, .leiste-zu .menue span, .leiste-zu .einstellungen-btn span, .leiste-zu .einklappen-btn span { display: none; }
+  .leiste-zu .app-version { display: flex; flex-direction: column; align-items: center; padding: 0; font-size: 11px; }
+  .leiste-zu .app-version span + span::before { content: none; }
+  .leiste-zu .menue button, .leiste-zu .einstellungen-btn { padding: 14px; justify-content: center; }
+  .leiste-zu .menue button svg, .leiste-zu .einstellungen-btn svg { width: 40px; height: 40px; }
+  .leiste-zu .einklappen-btn { justify-content: center; padding: 10px 14px; }
+  .leiste-zu .einklappen-btn svg { transform: scaleX(-1); }      /* Pfeil zeigt jetzt nach rechts: ausklappen */
+}
 
 .haupt { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 18px 24px 20px; }
 
 /* Kopf */
-/* Begrüßung so breit wie nötig (große Schrift); wird es eng, gibt zuerst die Suche nach */
+/* Kopf: links die Begrüßung, rechts Vollbild, Sync und Pfeile; wird es eng, kürzt sich die Begrüßung */
 .kopf { display: flex; align-items: center; gap: 24px; }
-.kopf-gruss { flex: none; min-width: 0; max-width: calc(100% - 380px); }   /* Platz für Suche (mind. 200 px) und Pfeile */
-.kopf > .suche { flex: 0 100 440px; min-width: 200px; margin-inline: auto; }
-.kopf-rechts { flex: none; }
-.kopf h1 { font-size: 48px; line-height: 1.1; color: var(--bronze); display: flex; align-items: center; gap: 16px; white-space: nowrap; }
+.kopf-gruss { flex: 0 1 auto; min-width: 0; }
+.kopf-rechts { flex: none; margin-left: auto; display: flex; align-items: center; gap: 18px; }
+.kopf h1 { font-size: 48px; line-height: 1.1; color: var(--bronze); display: flex; align-items: center; gap: 16px; white-space: nowrap; min-width: 0; }
 #gruss { overflow: hidden; text-overflow: ellipsis; }
 .gruss-icon { flex: none; width: 54px; height: 54px; color: var(--sonne); }
 .kopf p { margin-top: 4px; font-size: 26px; color: var(--bronze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -95,14 +112,20 @@ input[type=range] { accent-color: var(--accent); padding: 0; border: none; backg
 .suche .leeren { flex: none; width: 30px; height: 30px; min-height: 0; padding: 0; display: grid; place-items: center;
   background: none; border-color: transparent; color: var(--muted); }
 .suche .leeren svg { width: 16px; height: 16px; }
-kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 2px 8px; border-radius: 6px;
-  background: var(--karte-hell); border: 1px solid var(--rand); }
-.kopf-rechts { display: flex; align-items: center; justify-content: flex-end; gap: 18px; }
 /* Abgleich mit der Datenbank: grün = gespeichert, gelb = Server nicht erreichbar, grau = nur auf diesem Gerät */
 .sync { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .sync svg { flex: none; width: 20px; height: 20px; color: #34d399; }
 .sync[data-zustand="offline"] svg { color: var(--sonne); }
 .sync[data-zustand="lokal"] svg, .sync[data-zustand="verbinde"] svg { color: var(--muted); }
+/* Vollbild an/aus: nur das Symbol, ohne Rahmen; im Vollbild wird das „Verkleinern“-Symbol gezeigt */
+.vollbild { width: 32px; height: 32px; min-height: 0; padding: 0; display: grid; place-items: center;
+  background: none; border-color: transparent; color: var(--muted); margin-right: -8px; }
+@media (hover: hover) { .vollbild:hover { color: var(--text); border-color: transparent; } }
+.vollbild:active { background: none; }
+.vollbild[hidden] { display: none; }
+.vollbild svg { width: 20px; height: 20px; }
+.vollbild .vb-aus, .vollbild.an .vb-an { display: none; }
+.vollbild.an .vb-aus { display: block; }
 .blaettern { display: flex; gap: 6px; }
 .pfeil { width: 42px; height: 42px; min-height: 0; padding: 0; display: grid; place-items: center; }
 .pfeil svg { width: 20px; height: 20px; }
@@ -124,7 +147,7 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
 
 /* ================= Dashboard ================= */
 /* Mitte : unten = 3,3 : 1,7 – das Bild ist so hoch wie gewünscht (zuletzt +10 % nach unten) */
-.dash { display: grid; grid-template-rows: auto minmax(190px, 3.3fr) minmax(176px, 1.7fr) auto; gap: 14px; }
+.dash { display: grid; grid-template-rows: auto minmax(190px, 3.3fr) minmax(176px, 1.7fr); gap: 14px; }
 
 /* Kacheln oben */
 .kacheln { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
@@ -147,16 +170,20 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
 .dash-mitte { min-height: 0; display: grid; grid-template-columns: minmax(0, 4.4fr) minmax(280px, 4.6fr); gap: 14px; }
 .dash-mitte > .spotify { min-height: 0; display: flex; flex-direction: column; }
 .anstehend-karte { min-height: 0; display: flex; flex-direction: column; }
+/* Notiz: das Textfeld füllt die Karte, langer Text scrollt; „Gespeichert“ blinkt kurz nach dem Tippen auf */
+#notizText { flex: 1; min-height: 0; width: 100%; resize: none; overflow-y: auto; font-size: 15px; line-height: 1.45;
+  padding: 10px 14px; border-radius: 10px; }
+#notizStatus { opacity: 0; transition: opacity .4s; }
+#notizStatus.on { opacity: 1; }
 .zuhause { position: relative; overflow: hidden; padding: 0; min-height: 190px; }
 .zuhause .bg { position: absolute; inset: 0; opacity: 0; transition: opacity 3s ease; }
 .zuhause .bg.active { opacity: 1; }
 .zuhause .bg .main { position: absolute; inset: 0; background-size: cover; background-position: center 58%; }
 .zuhause::after { content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(10,15,26,.7) 0%, rgba(10,15,26,0) 32%, rgba(10,15,26,0) 62%, rgba(10,15,26,.75) 100%); }
-.zuhause-kopf { position: relative; z-index: 1; display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+.zuhause-kopf { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 10px;
   padding: 16px 18px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
 .zuhause-kopf small { display: flex; align-items: center; gap: 18px; font-size: 36px; }
-.zuhause-kopf small::before { content: ""; width: 21px; height: 21px; border-radius: 50%; background: #34d399; box-shadow: 0 0 24px #34d399; }
 .zuhause-chips { position: absolute; z-index: 1; left: 18px; bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
 .zuhause-sonne { position: absolute; z-index: 1; right: 18px; bottom: 16px; display: flex; gap: 8px; }   /* Sonnenauf- und -untergang */
 .zuhause-sonne .chip { font-variant-numeric: tabular-nums; }
@@ -174,7 +201,7 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
   border-radius: 24px; text-decoration: none; color: var(--text); background: var(--karte-hell); border: 1px solid transparent;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 @media (hover: hover) { .geraet:hover { border-color: var(--rand-hell); } }
-.geraet:active { background: #213052; }
+.geraet:active { background: #2e3f63; }
 .g-icon { flex: none; width: 84px; height: 84px; padding: 20px; border-radius: 21px; color: var(--accent-hell); background: var(--accent-weich); }
 .g-icon svg, .g-pfeil svg { display: block; width: 100%; height: 100%; }
 .g-text { min-width: 0; max-width: 100%; margin-top: auto; }
@@ -195,8 +222,8 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
 .smarthome-karte h2 { font-size: 22px; }
 .smarthome-karte .leer { margin-top: 18px; font-size: 15px; color: var(--muted); }
 
-/* Unten: Wetter, Uhr, Anstehend */
-.dash-unten { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
+/* Unten: Wetter, Nächste 7 Tage, Notiz – alle drei gleich breit */
+.dash-unten { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .dash-unten > .karte { display: flex; flex-direction: column; min-height: 0; }
 
 /* Wetter: Spannweite Tiefst–Höchst je Tag als Balken */
@@ -218,12 +245,10 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
 .w-tag .regen svg { width: 10px; height: 10px; color: var(--urlaub); }
 @container (max-width: 400px) { .w-tag .regen svg { display: none; } }   /* schmale Karte: 7 Spalten, nur die Zahl */
 
-/* Uhr: Stunden, Minuten und Sekunden in einer Zeile, jede Ziffer rollt beim Wechsel */
-.uhr-karte { align-items: stretch; }
-.uhr-mitte { flex: 1; min-height: 96px; display: grid; place-items: center; }
-.uhr-zeit { display: flex; align-items: baseline; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.uhr-zeit b { font-size: 92px; font-weight: 600; }
-.uhr-zeit #sek { margin-left: 4px; font-size: 52px; font-weight: 500; color: var(--muted); }
+/* Uhr oben links im Bild „Mein Zuhause“: Stunden, Minuten und Sekunden in einer Zeile, jede Ziffer rollt beim Wechsel */
+.uhr-zeit { display: flex; align-items: baseline; font-variant-numeric: tabular-nums; line-height: 1.1; white-space: nowrap;
+  color: var(--text); font-size: 36px; font-weight: 600; }   /* Stunden, Minuten und Sekunden gleich groß */
+.uhr-zeit b { font-weight: inherit; }
 .ziffer { display: inline-grid; overflow: hidden; }
 .ziffer > span { grid-area: 1 / 1; }
 .ziffer > .rein { animation: ziffer-rein .4s cubic-bezier(.2, .8, .3, 1); }
@@ -234,16 +259,13 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
   .ziffer > .rein { animation: none; }
   .ziffer > .raus { display: none; }
 }
-.uhr-chips { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
-.uhr-chips .chip { background: var(--karte-hell); }
 
-/* Anstehend: die nächsten Einträge */
+/* Nächste 7 Tage: die nächsten Einträge */
 #anstehend { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .a-zeile { flex: none; display: flex; align-items: center; gap: 12px; padding: 11px 12px 11px 0; border-radius: 12px;
   background: var(--karte-hell); overflow: hidden; }
 .a-zeile::before { content: ""; align-self: stretch; width: 4px; margin: -11px 0; background: var(--termin); }
 .a-zeile.f::before { background: var(--feiertag); }
-.a-zeile.u::before { background: var(--urlaub); }
 .a-zeile.g::before { background: var(--google); }
 .a-text { flex: 1; min-width: 0; }
 .a-text b, .a-text small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -252,7 +274,6 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
 .pille { flex: none; font-size: 12px; font-weight: 500; padding: 3px 9px; border-radius: 999px;
   color: var(--termin); background: rgba(245,181,74,.13); }
 .a-zeile.f .pille { color: var(--feiertag); background: rgba(248,113,113,.13); }
-.a-zeile.u .pille { color: var(--urlaub); background: rgba(56,189,248,.13); }
 .a-zeile.g .pille { color: var(--google); background: rgba(167,139,250,.13); }
 
 /* Spotify */
@@ -286,7 +307,7 @@ kbd { flex: none; font: inherit; font-size: 12px; color: var(--muted); padding: 
 .sp-playlist-liste { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px; }
 .sp-zeile { flex: none; display: grid; grid-template-columns: 26px 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%;
   min-height: 0; padding: 6px 8px; border-radius: 10px; border-color: transparent; background: none; text-align: left; }
-button.sp-zeile:active { background: #213052; }
+button.sp-zeile:active { background: #2e3f63; }
 @media (hover: hover) { button.sp-zeile:hover { background: rgba(148,163,184,.08); border-color: transparent; } }
 .sp-zeile.on { background: var(--accent-weich); }
 .sp-zeile.on b, .sp-zeile.on .sp-nr { color: var(--accent-hell); }
@@ -321,24 +342,16 @@ button.sp-zeile:active { background: #213052; }
 /* Schieberegler: dicke Spur, großer Knopf, links vom Knopf farbig (--wert setzt spotify.js) */
 .spotify input[type=range] { -webkit-appearance: none; appearance: none; height: 32px; margin: 0; background: none; cursor: pointer; }
 .spotify input[type=range]::-webkit-slider-runnable-track { height: 8px; border-radius: 999px;
-  background: linear-gradient(var(--accent), var(--accent)) 0 / var(--wert, 0%) 100% no-repeat, #2a3a5c; }
+  background: linear-gradient(var(--accent), var(--accent)) 0 / var(--wert, 0%) 100% no-repeat, #3a4d75; }
 .spotify input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -8px; border-radius: 50%;
   background: #fff; border: none; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
-.spotify input[type=range]::-moz-range-track { height: 8px; border-radius: 999px; background: #2a3a5c; }
+.spotify input[type=range]::-moz-range-track { height: 8px; border-radius: 999px; background: #3a4d75; }
 .spotify input[type=range]::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--accent); }
 .spotify input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: none; }
 .spotify input[type=range]:disabled { opacity: .5; cursor: default; }
 .sp-meldung { margin-top: 6px; font-size: 12px; color: var(--feiertag); }
 .sp-meldung:empty { display: none; }
 
-/* Fußzeile: Notiz direkt eintippen */
-.fusszeile { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 18px; border-radius: 16px; cursor: text; }
-.fusszeile svg { flex: none; width: 20px; height: 20px; color: var(--sonne); }
-.notiz-titel { position: relative; flex: none; width: 76px; }
-.notiz-titel b { font-size: 14px; }
-#notizText { flex: 1; min-width: 0; resize: none; overflow-y: auto; font-size: 15px; line-height: 1.45; padding: 10px 14px; border-radius: 10px; }
-#notizStatus { position: absolute; left: 0; top: 100%; margin-top: 2px; color: var(--muted); font-size: 11px; opacity: 0; transition: opacity .4s; }
-#notizStatus.on { opacity: 1; }
 
 /* ================= Kalender ================= */
 .kal { display: flex; }
@@ -353,15 +366,11 @@ button.sp-zeile:active { background: #213052; }
 .kw.jetzt { color: var(--accent-hell); font-weight: 700; }
 .dow { text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 0; text-transform: uppercase; letter-spacing: 1px; }
 .day { position: relative; min-height: 0; display: flex; flex-direction: column; padding: 8px 10px; border-radius: 12px;
-  font-size: 16px; font-weight: 500; cursor: pointer; overflow: hidden; -webkit-user-select: none; user-select: none;
-  background: var(--karte-hell); border: 1px solid transparent; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-@media (hover: hover) { .day:hover { border-color: var(--rand-hell); } }
-.day:active { background: #213052; }
+  font-size: 16px; font-weight: 500; overflow: hidden; -webkit-user-select: none; user-select: none;
+  background: var(--karte-hell); border: 1px solid transparent; }
 .day.other { opacity: .35; }
 .day.feiertag { color: var(--feiertag); background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.4); }
-.day.urlaub::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--urlaub); }
 .day.today { border-color: var(--bronze); background: var(--accent-weich); font-weight: 700; }
-.day.sel { outline: 2px solid var(--termin); outline-offset: -2px; background: rgba(245,181,74,.16); }
 .day .dot { display: none; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); gap: 3px; }
 .day .dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--termin); display: block; }
 .day .dot i.g { background: var(--google); }
@@ -370,20 +379,12 @@ button.sp-zeile:active { background: #213052; }
 .lbl { font-size: 12px; font-weight: 400; padding: 1px 6px; border-radius: 5px; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; color: var(--text); background: rgba(245,181,74,.25); }
 .lbl.f { background: rgba(248,113,113,.3); }
-.lbl.u { background: rgba(56,189,248,.28); }
 .lbl.g { background: rgba(167,139,250,.3); }
 .lbl.m { background: none; color: var(--muted); }
 .legende { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--muted); }
 .legende span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 .legende .l-f::before { background: var(--feiertag); }
-.legende .l-u::before { background: var(--urlaub); }
-.legende .l-t::before { background: var(--termin); }
 .legende .l-g::before { background: var(--google); }
-.mehrfach { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rand); }
-.mehrfach #selCount { flex: 1 1 180px; font-size: 13px; color: var(--muted); }   /* Hinweis bricht um, die Knöpfe bleiben in einer Reihe */
-.mehrfach input[type=text] { width: 260px; max-width: 100%; }
-.mehrfach .primary { color: #fff; background: var(--accent); border-color: transparent; }
-.mehrfach .loeschen:not(:disabled) { color: var(--feiertag); border-color: rgba(248,113,113,.45); }
 
 /* ================= Finanzen ================= */
 .fin { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr); gap: 14px; }
@@ -494,8 +495,9 @@ button.sp-zeile:active { background: #213052; }
 .fin-knoepfe .primary { color: #fff; background: var(--accent); border-color: transparent; }
 
 /* ================= Fenster „Musik“ ================= */
+/* Fenstergrößen in % statt vw/vh: % bezieht sich auf das Browserfenster, vw/vh würden von zoom (aufloesung.js) mitvergrößert */
 .tabs { display: flex; gap: 6px; margin: 10px 0; }
-.fenster { width: min(92vw, 620px); height: min(85vh, 680px); margin: auto; padding: 22px; color: var(--text);
+.fenster { width: min(92%, 620px); height: min(85%, 680px); margin: auto; padding: 22px; color: var(--text);
   background: var(--karte); border: 1px solid var(--rand); border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
 .fenster[open] { display: flex; flex-direction: column; }
 .fenster::backdrop { background: rgba(3,6,12,.65); backdrop-filter: blur(4px); }
@@ -513,9 +515,11 @@ button.sp-zeile:active { background: #213052; }
 .sp-mehr { flex: none; padding: 10px; }
 
 /* ================= Fenster „Einstellungen“ ================= */
-.fenster.einstellungen { height: fit-content; max-height: min(85vh, 720px); overflow-y: auto; }
-.es-tabs { flex: none; flex-wrap: wrap; margin: 0 0 6px; }
-.es-tabs button { flex: 1; }
+.fenster.einstellungen { height: fit-content; max-height: min(85%, 720px); overflow-y: auto; }
+/* Reiter alle gleich breit: Raster mit gleichen Spalten statt Flexbox (dort bestimmt der Text die Breite) */
+.es-tabs { flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0 0 6px; }
+.es-tabs button { min-width: 0; padding: 7px 6px; text-align: center; hyphens: auto; }
+@media (max-width: 719px) { .es-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }   /* schmales Fenster: 3 + 2 */
 .es-reiter[hidden] { display: none; }
 form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .es-feld { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); }
@@ -539,9 +543,13 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .einstellungen .primary:disabled { opacity: .6; }
 .es-modus { align-self: stretch; margin: 0; }
 .es-modus button { flex: 1; }
+/* Auflösung: vier gleich große Felder, Name groß, Pixel klein darunter */
+.es-aufloesung { align-self: stretch; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.es-aufloesung button { padding: 10px 12px; text-align: left; font-size: 15px; font-weight: 500; }
+.es-aufloesung small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
 
 /* ================= Fenster „Google Kalender“ ================= */
-.fenster.google { height: fit-content; max-height: min(85vh, 680px); }
+.fenster.google { height: fit-content; max-height: min(85%, 680px); }
 .google .fenster-liste { flex: 0 1 auto; }
 .gk-zeile { flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--karte-hell); }
 .gk-zeile div { flex: 1; min-width: 0; }
@@ -551,7 +559,7 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .gk-zeile small.fehler { color: var(--minus); }
 .google .leer { font-size: 14px; color: var(--muted); }
 /* ================= Formulare in Fenstern (Shortcut, Einstellungen) ================= */
-.fenster.klein { width: min(92vw, 480px); height: fit-content; }
+.fenster.klein { width: min(92%, 480px); height: fit-content; }
 .formular { display: flex; flex-direction: column; gap: 14px; }
 .formular[hidden] { display: none; }
 .formular label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
@@ -584,7 +592,6 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
   input, select { min-height: 44px; font-size: 16px; }
   .sp-unten select, .sp-zeit input, .sp-unten input { min-height: 0; }
   .tabs button { flex: 1; }
-  #notizText { font-size: 16px; }
 }
 
 /* Unter 1400 px (z. B. Tablet quer): schmale Seitenleiste nur mit Symbolen */
@@ -592,6 +599,7 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
   .app { grid-template-columns: 100px minmax(0, 1fr); }
   .leiste { align-items: center; padding: 22px 12px; }
   .logo, .menue span, .einstellungen-btn span { display: none; }      /* schmale Leiste: nur Symbole, ohne Namen */
+  .einklappen-btn { display: none; }      /* Leiste ist hier sowieso schmal */
   .app-version { display: flex; flex-direction: column; align-items: center; padding: 0; font-size: 11px; }   /* Datum über Uhrzeit */
   .app-version span + span::before { content: none; }
   .menue button, .einstellungen-btn { padding: 14px; justify-content: center; }
@@ -603,12 +611,9 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
   .w-tag { gap: 2px; padding: 6px 0 2px; }
   .w-tag .w-icon { width: 26px; height: 26px; }
   .w-spur { margin: 17px 0; }
-  .uhr-zeit b { font-size: 76px; }
-  .uhr-zeit #sek { font-size: 44px; }
   .sync span { display: none; }        /* nur das Wolken-Symbol, Text steht im Tooltip */
   .dash-unten > .karte { padding: 12px 16px; }   /* untere Reihe ist am Tablet flach */
   .dash-unten .karte-kopf { margin-bottom: 6px; }
-  .uhr-chips { margin-top: 4px; }
   .a-zeile { padding: 8px 10px 8px 0; }
   .a-zeile::before { margin: -8px 0; }
   .sp-titel b { font-size: 22px; }
@@ -623,9 +628,7 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 
 /* Hochformat / schmal: Inhalte untereinander, die Seiten scrollen senkrecht */
 @media (max-width: 999px), (orientation: portrait) {
-  .kopf { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 14px; }
-  .kopf > .suche { grid-column: 1 / -1; grid-row: 2; margin: 0; min-width: 0; }
-  .kopf-gruss { max-width: none; }
+  .kopf { gap: 16px; }
   .kopf h1 { font-size: 40px; }
   .gruss-icon { width: 44px; height: 44px; }
   .kopf p { font-size: 21px; }
@@ -639,8 +642,7 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
   .sp-oben { flex: none; height: 300px; }
   .zuhause { min-height: 211px; }
   .anstehend-karte { min-height: 220px; }
-  .dash-unten { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .dash-unten > .wetter-karte { grid-column: 1 / -1; }   /* Wetter über die ganze Breite, Uhr und Anstehend darunter */
+  .dash-unten { grid-template-columns: minmax(0, 1fr); }   /* Wetter, Nächste 7 Tage und Notiz untereinander, je über die ganze Breite */
   .netz, .smarthome { align-items: flex-start; }    /* Karte so hoch wie ihr Inhalt, die Seite scrollt */
   .fin { display: flex; flex-direction: column; }
   .fin > *, .fin-links > * { flex: none; }
@@ -648,7 +650,6 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
   .depot-liste, .fin-treffer { flex: none; overflow: visible; }
   .geraete-liste { flex: none; overflow: visible; }
   .dash-unten > .karte { min-height: 240px; }
-  .uhr-mitte { min-height: 180px; }
 }
 
 /* Handy: Menü als Leiste unten */
@@ -667,6 +668,7 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
   .gruss-icon { width: 24px; height: 24px; }
   .kopf p { font-size: 14px; }
   .blaettern { display: none; }       /* Handy: Menüleiste unten und Wischen reichen, mehr Platz für die Begrüßung */
+  .uhr-zeit #sek { display: none; }    /* Handy: nur Stunden und Minuten */
   .kacheln { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .sp-oben { height: 470px; flex-direction: column; }      /* Handy: Cover über der Playlist */
   .sp-cover { width: min(55cqw, 220px); height: min(55cqw, 220px); align-self: center; }

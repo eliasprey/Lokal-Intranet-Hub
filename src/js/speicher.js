@@ -188,27 +188,7 @@ setInterval(() => { if (!document.hidden) abschicken(); }, ABFRAGE_SEK * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) abschicken(); });
 window.addEventListener('online', () => abschicken());
 
-/* ================= Termine ================= */
 const neueId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-
-export function termineAnlegen(eintraege) {             // [{ datum, zeit, text }]
-  eintraege.forEach(({ datum, zeit, text }) => aendern({ op: 'termin+', id: neueId(), datum, zeit: zeit || '', text }));
-  melden();
-}
-export function terminLoeschen(id) {
-  aendern({ op: 'termin-', id: String(id) });
-  melden();
-}
-
-/* ================= Urlaub ================= */
-export function urlaubeAnlegen(eintraege) {             // [{ text, von, bis }]
-  eintraege.forEach(({ text, von, bis }) => aendern({ op: 'urlaub+', id: neueId(), text, von, bis: bis && bis >= von ? bis : von }));
-  melden();
-}
-export function urlaubLoeschen(id) {
-  aendern({ op: 'urlaub-', id: String(id) });
-  melden();
-}
 
 /* ================= Notizen ================= */
 export function notizenSpeichern(text) {

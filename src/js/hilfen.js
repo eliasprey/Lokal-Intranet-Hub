@@ -15,6 +15,10 @@ export function kalenderwoche(d) {
   return Math.ceil(((t - y0) / 86400000 + 1) / 7);
 }
 
+/* Vergrößerung der ganzen Seite (CSS-zoom, Einstellungen → Auflösung). Maus-/Fingerpositionen und getBoundingClientRect
+   zählen echte Pixel, offsetWidth, scrollTop und Stilangaben dagegen Seiten-Pixel – zum Umrechnen durch zoom() teilen. */
+export const zoom = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+
 /* Klick neben ein Fenster (<dialog>) schließt es */
 export function klickDanebenSchliesst(fenster) {
   fenster.addEventListener('click', e => {
