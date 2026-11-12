@@ -1,17 +1,19 @@
-/* Fenster „Einstellungen“ (Knopf unten in der Seitenleiste) mit fünf Reitern:
+/* Fenster „Einstellungen“ (Knopf unten in der Seitenleiste) mit sechs Reitern:
    - Versionsverwaltung: die neueste Version von GitHub sofort holen und einstellen, wie oft der Server das von selbst tut
      (alle paar Minuten, 1× am Tag nachts oder gar nicht). Die Updates selbst macht der Server (server.py); die Seite lädt
      sich danach neu.
    - Persönliche Angaben: Name für die Begrüßung und der Ort (Wetter, Sonnenzeiten, Feiertage des Bundeslands).
    - Intranet-Name: steht oben links.
+   - Kalender: Google Kalender über die geheime iCal-Adresse verbinden und entfernen (google.js, Adressen liegen auf dem Server).
    - Auflösung: Seite für FullHD, WQHD oder 3K vergrößern/verkleinern (aufloesung.js) – nur für dieses Gerät, liegt im Browser.
-   - Sicherheit: PIN für dieses Fenster und Konfiguration auf den Seiten sperren (sicherheit.js).
+   - Sicherheit: PIN für dieses Fenster, Konfiguration auf den Seiten sperren und Finanzen mit eigenem PIN sichern (sicherheit.js).
    Name, Ort, Intranet-Name und Sicherheit liegen in der Datenbank (speicher.js) und gelten auf allen Geräten. */
 import { $, klickDanebenSchliesst } from './hilfen.js';
 import { daten, beiAenderung, profilSpeichern } from './speicher.js';
 import { BUNDESLAENDER } from './feiertage.js';
 import { versionTeile } from './aktualisierung.js';
-import { pinAbfragen, sicherheitSenden } from './sicherheit.js';
+import { pinAbfragen, sicherheitSenden, FIN_STELLEN } from './sicherheit.js';
+import { googleReiter } from './google.js';
 
 const geladen = window.INTRANET_CONFIG?.version || '';   // Version, mit der diese Seite ausgeliefert wurde
 let info = null, warteAufUpdate = 0, abfrageTimer;
@@ -222,10 +224,36 @@ function sicherheitZeigen() {
     : 'Aus – jeder kann die Einstellungen öffnen.';
   $('esPin').textContent = an ? 'PIN ausschalten' : 'PIN einschalten';
   $('esSperreInfo').textContent = (gesperrt
-    ? 'Gesperrt – Depot, Shortcuts, Google Kalender und die Spotify-Anmeldung lassen sich auf den Seiten nicht ändern. Musik geht weiter.'
+    ? 'Gesperrt – Depot, Shortcuts und die Spotify-Anmeldung lassen sich auf den Seiten nicht ändern. Musik geht weiter.'
     : 'Offen – auf den Seiten lässt sich alles einrichten.')
     + (an ? '' : ' Ohne PIN kann jeder die Sperre hier wieder aufheben.');
   $('esSperre').textContent = gesperrt ? 'Sperre aufheben' : 'Konfiguration sperren';
+  const fin = daten.sicherheit.finanzen;
+  $('esFinanzenInfo').textContent = fin
+    ? 'An – auf der Seite Finanzen sind Gesamtwert und Positionsgrößen verschwommen, bis man sie mit dem PIN entsperrt. '
+      + 'Nach einer Minute ohne Eingabe (wenn es zurück zum Dashboard geht) sind sie wieder verdeckt.'
+    : 'Aus – auf der Seite Finanzen sind alle Beträge zu sehen.';
+  $('esFinanzen').textContent = fin ? 'Sicherung ausschalten' : 'Finanzen sichern';
+}
+
+function finanzenMeldung(text, fehler = false) {
+  $('esFinanzenMeldung').textContent = text; $('esFinanzenMeldung').classList.toggle('fehler', fehler);
+}
+
+/* Einschalten: neuen PIN festlegen (mindestens 6 Ziffern). Ausschalten: nur mit dem PIN der Finanzen */
+async function finanzenUmschalten() {
+  finanzenMeldung('');
+  if (daten.sicherheit.finanzen) {
+    const ok = await pinAbfragen({ titel: 'Sicherung ausschalten', stellen: FIN_STELLEN,
+      text: 'PIN der Finanzen eingeben. Danach sind die Beträge auf allen Geräten wieder zu sehen.',
+      senden: p => sicherheitSenden('finanzen-aus', { pin, finanzPin: p }) });
+    if (ok) finanzenMeldung('Sicherung ausgeschaltet.');
+    return;
+  }
+  const neu = await pinAbfragen({ titel: 'PIN für die Finanzen', wiederholen: true, stellen: FIN_STELLEN,
+    text: `Mindestens ${FIN_STELLEN[0]} Ziffern (höchstens ${FIN_STELLEN[1]}). Danach sind Gesamtwert und Positionsgrößen auf allen Geräten verschwommen, bis man sie mit diesem PIN entsperrt.`,
+    senden: p => sicherheitSenden('finanzen-an', { pin, neu: p }) });
+  if (neu) finanzenMeldung('Finanzen sind gesichert.');
 }
 
 async function pinUmschalten() {
@@ -255,8 +283,9 @@ function formulareFuellen() {
   $('esOrtSuche').value = ''; $('esOrtTreffer').replaceChildren();
   $('esPersonMeldung').textContent = $('esHubMeldung').textContent = '';
   ortZeigen();
-  sicherheitMeldung(''); sicherheitZeigen();
+  sicherheitMeldung(''); finanzenMeldung(''); sicherheitZeigen();
   aufloesungZeigen();
+  googleReiter();
 }
 
 export function starteEinstellungen() {
@@ -293,6 +322,7 @@ export function starteEinstellungen() {
   klickDanebenSchliesst(fenster);
   $('esPin').onclick = pinUmschalten;
   $('esSperre').onclick = sperreUmschalten;
+  $('esFinanzen').onclick = finanzenUmschalten;
   beiAenderung(sicherheitZeigen);
   $('esZiehen').onclick = ziehen;
   document.querySelectorAll('#esModus button').forEach(b => { b.onclick = () => modus(b.dataset.modus); });

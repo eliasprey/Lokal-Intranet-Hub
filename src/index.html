@@ -36,11 +36,11 @@
         <span>Kalender</span>
       </button>
       <button data-seite="2">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9"/></svg>
         <span>Dashboard</span>
       </button>
       <button data-seite="3">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 4 14h7l-1 7 9-11h-7z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         <span>Shortcuts</span>
       </button>
       <button data-seite="4">
@@ -97,8 +97,9 @@
         <section class="seite fin" aria-label="Finanzen">
           <div class="fin-links">
             <section class="karte depot-summe">
-              <div class="karte-kopf"><h3 id="depotTitel">Mein Depot</h3><small id="depotStand"></small></div>
-              <div class="ds-zahlen">
+              <div class="karte-kopf"><h3 id="depotTitel">Mein Depot</h3><small id="depotStand"></small>
+                <button class="fin-schloss" id="finSchloss" hidden></button></div>
+              <div class="ds-zahlen" id="depotZahlen">
                 <div><small>Gesamtwert</small><b id="depotWert">–</b></div>
                 <div><small>Gewinn / Verlust seit Kauf</small><b id="depotGewinn">–</b><span id="depotGewinnProz"></span></div>
               </div>
@@ -151,8 +152,8 @@
           </section>
         </section>
 
-        <!-- Kalender -->
-        <section class="seite kal" aria-label="Kalender">
+        <!-- Kalender: Monatsansicht, Klick auf einen Tag öffnet rechts die Tagesansicht mit allen Stunden (kalender.js) -->
+        <section class="seite kal" id="kal" aria-label="Kalender">
           <section class="karte gross" id="calPanel">
             <div class="cal-head">
               <h2 id="monthLabel"></h2>
@@ -160,11 +161,21 @@
                 <button id="prev" aria-label="Voriger Monat">‹</button>
                 <button id="todayBtn">Heute</button>
                 <button id="next" aria-label="Nächster Monat">›</button>
-                <button id="googleBtn" title="Google Kalender verbinden">Google</button>
+                <button id="kalenderBtn" title="Google Kalender öffnen">Kalender</button>
               </div>
             </div>
             <div class="grid" id="grid"></div>
             <div class="legende"><span class="l-f">Feiertag</span><span class="l-g">Google</span></div>
+          </section>
+          <section class="karte tag-karte" id="tagPanel" aria-label="Tagesansicht" hidden>
+            <div class="tag-kopf">
+              <button id="tagZurueck" aria-label="Voriger Tag" title="Voriger Tag">‹</button>
+              <div class="tag-titel"><h3 id="tagTitel"></h3><small id="tagInfo"></small></div>
+              <button id="tagVor" aria-label="Nächster Tag" title="Nächster Tag">›</button>
+              <button id="tagZu" aria-label="Tagesansicht schließen" title="Schließen">✕</button>
+            </div>
+            <div class="tag-ganz" id="tagGanz"></div>
+            <div class="tag-stunden" id="tagStunden"></div>
           </section>
         </section>
 
@@ -325,6 +336,7 @@
     <button data-reiter="version">Versionsverwaltung</button>
     <button data-reiter="person">Persönliche Angaben</button>
     <button data-reiter="hub">Intranet-Name</button>
+    <button data-reiter="kalender">Kalender</button>
     <button data-reiter="aufloesung">Auflösung</button>
     <button data-reiter="sicherheit">Sicherheit</button>
   </div>
@@ -378,7 +390,26 @@
     <div class="formular-knoepfe"><button type="submit" class="primary">Speichern</button></div>
   </form>
 
-  <!-- Reiter 4: Auflösung dieses Bildschirms – gilt nur für dieses Gerät (aufloesung.js) -->
+  <!-- Reiter 4: Google Kalender über die geheime iCal-Adresse verbinden und entfernen (google.js) -->
+  <div class="es-reiter" data-reiter="kalender" hidden>
+    <section class="es-abschnitt">
+      <h4>Verbundene Google Kalender</h4>
+      <div class="gk-liste" id="gListe"></div>
+    </section>
+    <form class="es-abschnitt gk-form" id="gForm">
+      <h4>Kalender verbinden</h4>
+      <p class="es-info">Google Kalender am PC öffnen → Zahnrad → <b>Einstellungen</b> → links den Kalender
+        wählen → <b>Kalender integrieren</b> → <b>Geheime Adresse im iCal-Format</b> kopieren und hier einfügen.
+        Die Termine erscheinen dann auf allen Geräten (nur anzeigen, nicht ändern).</p>
+      <div class="suche">
+        <input type="text" id="gAdresse" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off" spellcheck="false" aria-label="Geheime iCal-Adresse">
+        <button type="submit" class="los" id="gOk">Verbinden</button>
+      </div>
+      <p class="es-meldung" id="gMeldung"></p>
+    </form>
+  </div>
+
+  <!-- Reiter 5: Auflösung dieses Bildschirms – gilt nur für dieses Gerät (aufloesung.js) -->
   <div class="es-reiter" data-reiter="aufloesung" hidden>
     <section class="es-abschnitt">
       <h4>Auflösung dieses Bildschirms</h4>
@@ -394,7 +425,7 @@
     </section>
   </div>
 
-  <!-- Reiter 5: PIN für die Einstellungen, Konfiguration auf den Seiten sperren (sicherheit.js) -->
+  <!-- Reiter 6: PIN für die Einstellungen, Konfiguration auf den Seiten sperren, Finanzen sichern (sicherheit.js) -->
   <div class="es-reiter" data-reiter="sicherheit" hidden>
     <section class="es-abschnitt">
       <h4>PIN für die Einstellungen</h4>
@@ -407,10 +438,16 @@
       <button class="primary" id="esSperre">Konfiguration sperren</button>
       <p class="es-meldung" id="esSicherheitMeldung"></p>
     </section>
+    <section class="es-abschnitt">
+      <h4>Finanzen sichern</h4>
+      <p class="es-info" id="esFinanzenInfo"></p>
+      <button class="primary" id="esFinanzen">Finanzen sichern</button>
+      <p class="es-meldung" id="esFinanzenMeldung"></p>
+    </section>
   </div>
 </dialog>
 
-<!-- PIN eingeben (Einstellungen öffnen) bzw. neu festlegen (sicherheit.js) -->
+<!-- PIN eingeben (Einstellungen öffnen, Finanzen entsperren) bzw. neu festlegen (sicherheit.js) -->
 <dialog class="fenster klein" id="pinFenster">
   <div class="fenster-kopf">
     <h3 id="pinTitel">PIN eingeben</h3>
@@ -442,24 +479,6 @@
       <button type="button" id="scAbbrechen">Abbrechen</button>
       <button type="submit" class="primary">Speichern</button>
     </div>
-  </form>
-</dialog>
-
-<dialog class="fenster google" id="google">
-  <div class="fenster-kopf">
-    <h3>Google Kalender</h3>
-    <button id="googleZu" aria-label="Schließen" title="Schließen">✕</button>
-  </div>
-  <div class="fenster-liste" id="gListe"></div>
-  <form class="gk-form" id="gForm">
-    <p>Neuen Kalender verbinden: Google Kalender am PC öffnen → Zahnrad → <b>Einstellungen</b> → links den Kalender
-      wählen → <b>Kalender integrieren</b> → <b>Geheime Adresse im iCal-Format</b> kopieren und hier einfügen.
-      Die Termine erscheinen dann auf allen Geräten (nur anzeigen, nicht ändern).</p>
-    <div class="suche">
-      <input type="text" id="gAdresse" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off" spellcheck="false" aria-label="Geheime iCal-Adresse">
-      <button type="submit" class="los" id="gOk">Verbinden</button>
-    </div>
-    <p class="fehler" id="gMeldung"></p>
   </form>
 </dialog>
 

@@ -5,6 +5,10 @@ import { $, zoom } from './hilfen.js';
 const START = 2;                         // die mittlere Seite (Dashboard) ist die Startseite
 const RUECKKEHR_MS = 60_000;             // so lange ohne Eingabe, dann zurück zur Startseite
 
+/* Wer mitbekommen will, dass diese Minute ohne Eingabe vorbei ist (z. B. Finanzen wieder sperren, sicherheit.js) */
+const ruheBeobachter = [];
+export const beiRuhe = fn => ruheBeobachter.push(fn);
+
 export function starteSeiten() {
   const leiste = $('seiten'), seiten = [...leiste.children];
   const links = $('pfeilLinks'), rechts = $('pfeilRechts');
@@ -49,6 +53,7 @@ export function starteSeiten() {
   function zurueck() {
     if (document.querySelector('dialog[open]')) return ruheNeu();
     if (aktuell !== START) zeige(START);
+    ruheBeobachter.forEach(fn => fn());
   }
   ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'].forEach(t =>
     document.addEventListener(t, ruheNeu, { passive: true, capture: true }));

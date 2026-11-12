@@ -24,9 +24,10 @@ const NOCHMAL_SEK = 15;                          // so lange nach einem Fehler w
    depot: [{ id, symbol, name, art, boerse, menge, einkauf }] – menge und einkauf (Euro gesamt, '' = unbekannt) als Text,
    profil: { name, hub, ort: { name, info, lat, lon, bundesland } | null } – Begrüßung, Name des Intranets, Ort für
    Wetter/Sonne/Feiertage, shortcuts: [{ id, name, url }],
-   sicherheit: { pin, gesperrt } – PIN für die Einstellungen an, Konfiguration auf den Seiten gesperrt (sicherheit.js) */
+   sicherheit: { pin, gesperrt, finanzen } – PIN für die Einstellungen an, Konfiguration auf den Seiten gesperrt,
+   Finanzen mit eigenem PIN gesichert (sicherheit.js) */
 const PROFIL_LEER = { name: '', hub: '', ort: null };
-const SICHERHEIT_LEER = { pin: false, gesperrt: false };
+const SICHERHEIT_LEER = { pin: false, gesperrt: false, finanzen: false };
 export const daten = { termine: {}, urlaube: [], notizen: '', depot: [], profil: { ...PROFIL_LEER }, shortcuts: [],
   sicherheit: { ...SICHERHEIT_LEER } };
 

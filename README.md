@@ -25,8 +25,8 @@ Lokal-Intranet-Hub/
 │  │  ├─ speicher.js       Termine, Urlaube, Notizen, Depot: Abgleich mit der Datenbank, Kopie im Browser
 │  │  ├─ uhr.js            Uhr, Datum, Begrüßung, Bild „Mein Zuhause“
 │  │  ├─ feiertage.js      Feiertage je Bundesland
-│  │  ├─ kalender.js       Kalender (nur anzeigen), „Nächste 7 Tage“
-│  │  ├─ google.js         Termine aus Google Kalender (nur lesen), Fenster zum Verbinden
+│  │  ├─ kalender.js       Kalender (nur anzeigen), Tagesansicht, „Nächste 7 Tage“
+│  │  ├─ google.js         Termine aus Google Kalender (nur lesen), Verbinden unter Einstellungen → Kalender
 │  │  ├─ wetter.js         Wetter
 │  │  ├─ notizen.js        Karte „Notiz“ im Dashboard
 │  │  ├─ spotify.js        Spotify-Player
@@ -95,7 +95,10 @@ wird herausgerechnet. Die Wahl gilt nur für dieses Gerät (sie liegt im Browser
 - **Seiten** (`seiten.js`): Blättert zwischen Finanzen, Kalender, Dashboard, Shortcuts und Smarthome – über das Menü, die Pfeile,
   die Pfeiltasten oder Wischen (die Seite folgt dem Finger).
 - **Kalender** (`kalender.js`): Große Monatsansicht auf eigener Seite mit Kalenderwochen, Feiertagen
-  und den Terminen aus Google Kalender. Nur zum Anzeigen – Termine werden in Google angelegt und geändert.
+  und den Terminen aus Google Kalender. Nur zum Anzeigen – Termine werden in Google angelegt und geändert;
+  der Knopf **Kalender** öffnet dafür Google Kalender. Ein Klick auf einen Tag öffnet rechts die **Tagesansicht**
+  (ein Drittel des Kalenders) mit allen 24 Stunden: ganztägige Termine oben, die übrigen in ihrer Länge im Stundenraster,
+  heute mit roter Linie für die aktuelle Uhrzeit. Mit ‹ › tageweise blättern, ✕, Esc oder nochmal auf den Tag schließt sie.
 - **Google Kalender** (`google.js`, Abruf in `server.py`): Termine aus den eigenen Google Kalendern erscheinen
   lila im Kalender und unter „Nächste 7 Tage“ (nur anzeigen – ändern weiter in Google). Einrichtung siehe unten.
 - **Nächste 7 Tage** (`kalender.js`): Dashboard-Karte mit allem, was von heute bis in 6 Tagen ansteht.
@@ -141,12 +144,18 @@ wird herausgerechnet. Die Wahl gilt nur für dieses Gerät (sie liegt im Browser
   - **Persönliche Angaben:** Name für die Begrüßung und der Ort (Suche über Open-Meteo, nur Deutschland) für
     Wetter, Sonnenzeiten und Feiertage. Das Bundesland wird beim Ort vorgeschlagen und lässt sich ändern.
   - **Intranet-Name:** steht oben links und im Browser-Tab.
+  - **Kalender:** Google Kalender über die geheime iCal-Adresse verbinden und wieder entfernen (siehe unten).
   - **Sicherheit** (`sicherheit.js`): **PIN einschalten** – ab dann öffnen sich die Einstellungen nur mit einem
     5-stelligen PIN. Geprüft wird auf dem Server, in der Datenbank liegt nur ein Hash; nach 5 falschen Versuchen
     gibt es 5 Minuten Pause. **Konfiguration sperren** – auf den Seiten lässt sich dann nichts mehr einrichten:
-    Depot (Finanzen), Shortcuts, Google Kalender verbinden/entfernen und Spotify an-/abmelden. Die Knöpfe dafür
+    Depot (Finanzen), Shortcuts und Spotify an-/abmelden. Die Knöpfe dafür
     verschwinden, und der Server lehnt solche Änderungen ab. Musik geht weiter.
     Ohne PIN kann jeder die Sperre in den Einstellungen wieder aufheben.
+    **Finanzen sichern** – eigener PIN mit 6 bis 12 Ziffern (auch nur als Hash auf dem Server). Danach sind auf der
+    Seite Finanzen Gesamtwert, Gewinn in Euro, das Diagramm des ganzen Depots und bei jedem Asset Stückzahl und
+    Positionswert verschwommen. Über „Entsperren“ (oder Tippen auf die Zahlen) und den PIN werden sie auf diesem
+    Gerät sichtbar – bis eine Minute lang nichts getan wird (dann geht es auch zurück zum Dashboard). Ausschalten
+    geht nur mit dem PIN der Finanzen. Das ist ein Sichtschutz: Die Zahlen kommen weiterhin vom Server.
   Alles davon liegt in der Datenbank und gilt auf allen Geräten.
 - **Tablet** (`main.js`): Große Tippflächen, Seitenwechsel durch Wischen. Nach dem Sperren und
   Entsperren wird die Seite neu geladen.
@@ -222,7 +231,7 @@ Google-Cloud-Projekt. Der Server holt sie höchstens alle 5 Minuten für alle Ge
 1. Google Kalender **am PC** öffnen (<https://calendar.google.com>) → Zahnrad → **Einstellungen**.
 2. Links unter „Einstellungen für meine Kalender“ den Kalender wählen → **Kalender integrieren**.
 3. **Geheime Adresse im iCal-Format** kopieren (beginnt mit `https://calendar.google.com/calendar/ical/…`).
-4. Auf der Startseite: Seite **Kalender** → Knopf **Google** → Adresse einfügen → **Verbinden**.
+4. Auf der Startseite: **Einstellungen** (unten in der Seitenleiste) → Reiter **Kalender** → Adresse einfügen → **Verbinden**.
 
 Für weitere Kalender (z. B. Familie, Geburtstage) Schritte 2–4 wiederholen. Die Adressen liegen nur in der Datenbank
 auf dem Server und gehen nie an den Browser. Wer sie kennt, kann den Kalender lesen. Gerät sie in falsche Hände,

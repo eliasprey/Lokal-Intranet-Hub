@@ -28,7 +28,7 @@ Schnittstelle:
   GET  /api/daten         → { version, termine: { 'JJJJ-MM-TT': [{ id, zeit, text }] }, urlaube: [...], notizen,
                               depot: [{ id, symbol, name, art, boerse, menge, einkauf }],
                               profil: { name, hub, ort: { name, info, lat, lon, bundesland } | null }, shortcuts: [{ id, name, url }],
-                              sicherheit: { pin, gesperrt } }
+                              sicherheit: { pin, gesperrt, finanzen } }
                             Mit "If-None-Match" kommt 304 zurück, solange sich nichts geändert hat.
   POST /api/aenderungen   ← [{ op, ... }, ...] – alle Änderungen eines Geräts, der Reihe nach (siehe aendern()).
                           → { version, abgelehnt: [...] } – ungültige Änderungen werden übersprungen.
@@ -36,8 +36,10 @@ Schnittstelle:
                             Codes und Ergebnis der letzten Update-Prüfung (zur Fehlersuche)
   POST /api/update/jetzt  → sofort auf GitHub nach einer neuen Version sehen (Einstellungen: „Aktuellste Version ziehen“)
   POST /api/update/modus  ← { modus: 'minuten' | 'taeglich' | 'aus' } – wie oft von selbst nach Updates gesehen wird
-  POST /api/sicherheit    ← { aktion: 'pruefen' | 'pin-an' | 'pin-aus' | 'sperren' | 'entsperren', pin, neu }
-                          → { pin, gesperrt } – PIN der Einstellungen und Sperre der Konfiguration (Einstellungen → Sicherheit)
+  POST /api/sicherheit    ← { aktion: 'pruefen' | 'pin-an' | 'pin-aus' | 'sperren' | 'entsperren'
+                                     | 'finanzen-an' | 'finanzen-aus' | 'finanzen-pruefen', pin, neu, finanzPin }
+                          → { pin, gesperrt, finanzen } – PIN der Einstellungen, Sperre der Konfiguration und
+                            PIN der Finanzen (Einstellungen → Sicherheit)
   GET  /api/finanzen/suche?q=…           → [{ symbol, name, art, boerse }] – Aktien, ETFs und Fonds (Yahoo Finance)
   GET  /api/finanzen/kurse?symbole=A,B   → { A: { kurs, zeit, waehrung, name, ref: { tag, woche, monat, jahr, ytd },
                                                 eur: { kurs, ref } } | { fehler } } – ref = Schlusskurs zu Beginn des Zeitraums
@@ -46,7 +48,7 @@ Schnittstelle:
   GET  /api/finanzen/verlauf?symbole=A,B&zeitraum=1t|1w|1m|3m|1j|3j|5j|max
                                          → { A: { waehrung, punkte: [[zeit, kurs]], eur: [[zeit, kurs]] } | { fehler } }
                                            – Kursverlauf fürs Diagramm, eur = Wechselkurs im selben Zeitraum (fehlt bei Euro)
-  GET  /api/google?von=JJJJ-MM-TT&bis=JJJJ-MM-TT → { kalender: [{ id, name, fehler }], termine: { 'JJJJ-MM-TT': [{ zeit, text }] } }
+  GET  /api/google?von=JJJJ-MM-TT&bis=JJJJ-MM-TT → { kalender: [{ id, name, fehler }], termine: { 'JJJJ-MM-TT': [{ zeit, text, von?, bis? }] } }
                                            – Termine der verbundenen Google Kalender (höchstens 400 Tage)
   POST /api/google/kalender         ← { adresse } – Google Kalender über seine geheime iCal-Adresse verbinden
   POST /api/google/entfernen        ← { id }
@@ -178,11 +180,17 @@ def ort_pruefen(o):
 # PIN: 5 Ziffern, ohne ihn öffnet sich das Fenster Einstellungen nicht. In der Datenbank liegt nur ein Hash mit Salz
 # (Wert 'pin'), der nie an die Geräte geht – geprüft wird hier. Nach 5 falschen Versuchen 5 Minuten Pause, damit
 # niemand alle 100 000 PINs durchprobiert.
-# Sperre (Wert 'konfig_gesperrt'): Auf den Seiten lässt sich nichts mehr einrichten – Depot, Shortcuts, Google Kalender
-# und die Spotify-Anmeldung. Termine, Notizen und Musik bleiben bedienbar. Der Server lehnt solche Änderungen dann ab.
+# Sperre (Wert 'konfig_gesperrt'): Auf den Seiten lässt sich nichts mehr einrichten – Depot, Shortcuts und die
+# Spotify-Anmeldung (Google Kalender wird in den Einstellungen verbunden, die der PIN schützt). Termine, Notizen und Musik bleiben bedienbar. Der Server lehnt solche Änderungen dann ab.
+# Finanzen sichern (Wert 'finanz_pin'): eigener PIN mit 6 bis 12 Ziffern, ebenfalls nur als Hash. Ist er gesetzt,
+# zeigen die Geräte Gesamtwert und Positionsgrößen verschwommen, bis jemand mit diesem PIN entsperrt
+# ('finanzen-pruefen' – braucht den PIN der Einstellungen nicht). Ausschalten geht nur mit beiden PINs.
 PIN = re.compile(r'\d{5}')
+FIN_PIN = re.compile(r'\d{6,12}')
 PIN_VERSUCHE, PIN_PAUSE = 5, 300
-pin_fehler = []                          # Zeitpunkte der letzten falschen Eingaben
+pin_fehler = []                          # Zeitpunkte der letzten falschen Eingaben (PIN der Einstellungen)
+fin_pin_fehler = []                      # dasselbe für den PIN der Finanzen
+AKTIONEN = ('pruefen', 'pin-an', 'pin-aus', 'sperren', 'entsperren', 'finanzen-an', 'finanzen-aus', 'finanzen-pruefen')
 KONFIGURATION = ('depot+', 'depot-', 'shortcut+', 'shortcut-')   # Änderungen, die die Sperre verhindert
 
 
@@ -195,39 +203,48 @@ def gesperrt():
 
 
 def sicherheit():
-    return {'pin': bool(wert('pin')), 'gesperrt': gesperrt()}
+    return {'pin': bool(wert('pin')), 'gesperrt': gesperrt(), 'finanzen': bool(wert('finanz_pin'))}
 
 
 def pin_hash(pin, salz):
     return hashlib.pbkdf2_hmac('sha256', pin.encode(), salz, 200_000).hex()
 
 
-def pin_pruefen(pin, gespeichert):
+def pin_pruefen(pin, gespeichert, form=PIN, fehler=pin_fehler):
     """Kein PIN gesetzt oder richtig → ok, sonst PinFalsch (auch bei zu vielen Versuchen)"""
     if not gespeichert:
         return
     jetzt = time.time()
-    pin_fehler[:] = [t for t in pin_fehler if jetzt - t < PIN_PAUSE]
-    if len(pin_fehler) >= PIN_VERSUCHE:
-        raise PinFalsch(f'Zu viele falsche Versuche – in {int(PIN_PAUSE - (jetzt - pin_fehler[0])) // 60 + 1} min nochmal')
+    fehler[:] = [t for t in fehler if jetzt - t < PIN_PAUSE]
+    if len(fehler) >= PIN_VERSUCHE:
+        raise PinFalsch(f'Zu viele falsche Versuche – in {int(PIN_PAUSE - (jetzt - fehler[0])) // 60 + 1} min nochmal')
     salz, h = gespeichert.split(':')
-    if isinstance(pin, str) and PIN.fullmatch(pin) and hmac.compare_digest(pin_hash(pin, bytes.fromhex(salz)), h):
-        pin_fehler.clear()
+    if isinstance(pin, str) and form.fullmatch(pin) and hmac.compare_digest(pin_hash(pin, bytes.fromhex(salz)), h):
+        fehler.clear()
         return
-    pin_fehler.append(jetzt)
+    fehler.append(jetzt)
     raise PinFalsch('PIN falsch')
 
 
 def sicherheit_aendern(a):
     aktion = a.get('aktion')
-    if aktion not in ('pruefen', 'pin-an', 'pin-aus', 'sperren', 'entsperren'):
+    if aktion not in AKTIONEN:
         raise Ungueltig(f'unbekannte Aktion: {aktion!r}')
     neu = a.get('neu')
     if aktion == 'pin-an' and not (isinstance(neu, str) and PIN.fullmatch(neu)):
         raise Ungueltig('Der PIN muss aus 5 Ziffern bestehen')
+    if aktion == 'finanzen-an' and not (isinstance(neu, str) and FIN_PIN.fullmatch(neu)):
+        raise Ungueltig('Der PIN für die Finanzen muss aus 6 bis 12 Ziffern bestehen')
     with sperre:
-        gespeichert = wert('pin')
-    pin_pruefen(a.get('pin'), gespeichert)   # außerhalb der Sperre: das Rechnen dauert etwas
+        gespeichert, fin_gespeichert = wert('pin'), wert('finanz_pin')
+    # außerhalb der Sperre: das Rechnen dauert etwas
+    if aktion == 'finanzen-pruefen':          # Finanzen entsperren (auf der Seite, ohne die Einstellungen)
+        if not fin_gespeichert:
+            raise Ungueltig('Die Finanzen sind nicht gesichert')
+        return pin_pruefen(a.get('finanzPin'), fin_gespeichert, FIN_PIN, fin_pin_fehler)
+    pin_pruefen(a.get('pin'), gespeichert)
+    if aktion == 'finanzen-aus':
+        pin_pruefen(a.get('finanzPin'), fin_gespeichert, FIN_PIN, fin_pin_fehler)
     if aktion == 'pruefen':
         return
     salz = secrets.token_bytes(16)
@@ -236,6 +253,10 @@ def sicherheit_aendern(a):
             setze('pin', f'{salz.hex()}:{pin_hash(neu, salz)}')
         elif aktion == 'pin-aus':
             db.execute("DELETE FROM werte WHERE name = 'pin'")
+        elif aktion == 'finanzen-an':
+            setze('finanz_pin', f'{salz.hex()}:{pin_hash(neu, salz)}')
+        elif aktion == 'finanzen-aus':
+            db.execute("DELETE FROM werte WHERE name = 'finanz_pin'")
         else:
             setze('konfig_gesperrt', '1' if aktion == 'sperren' else '0')
         setze('version', version() + 1)      # alle Geräte holen den neuen Stand
@@ -1049,7 +1070,9 @@ def kalender_holen(adresse):
 
 
 def termine_zwischen(termine, von, bis):
-    """Termine eines Kalenders → { 'JJJJ-MM-TT': [{ zeit, text }] } für die Tage von … bis (date)"""
+    """Termine eines Kalenders → { 'JJJJ-MM-TT': [{ zeit, text, von?, bis? }] } für die Tage von … bis (date).
+    zeit = Beginn (nur am ersten Tag, leer bei ganztägigen); von/bis = Teil des Termins an diesem Tag ('00:00' … '24:00')
+    für die Tagesansicht – fehlen bei ganztägigen Terminen."""
     serien = {t.get('uid'): t['tz'] for t in termine if t.get('regel') and not t.get('rid')}
     # einzeln geänderte oder abgesagte Wiederholungen: (uid, Beginn in der Zeitzone der Serie)
     geaendert = {(t['uid'], umrechnen(*t['rid'][:2], serien.get(t['uid']))) for t in termine if t.get('rid') and t.get('uid')}
@@ -1074,7 +1097,11 @@ def termine_zwischen(termine, von, bis):
             tag = max(anfang.date(), von)
             while tag <= min(letzter, bis, anfang.date() + datetime.timedelta(days=62)):
                 zeit = '' if t['ganz'] or tag != anfang.date() else anfang.strftime('%H:%M')
-                tage.setdefault(tag.isoformat(), []).append({'zeit': zeit, 'text': t['text'] or '(ohne Titel)'})
+                eintrag = {'zeit': zeit, 'text': t['text'] or '(ohne Titel)'}
+                if not t['ganz']:
+                    eintrag['von'] = anfang.strftime('%H:%M') if tag == anfang.date() else '00:00'
+                    eintrag['bis'] = schluss.strftime('%H:%M') if schluss.date() == tag else '24:00' if schluss > anfang else eintrag['von']
+                tage.setdefault(tag.isoformat(), []).append(eintrag)
                 tag += datetime.timedelta(days=1)
     return tage
 
@@ -1094,7 +1121,7 @@ def google_speichern(liste):
 
 
 def google_termine(von, bis):
-    """→ { kalender: [{ id, name, fehler }], termine: { 'JJJJ-MM-TT': [{ zeit, text }] } } – ohne die Adressen"""
+    """→ { kalender: [{ id, name, fehler }], termine: { 'JJJJ-MM-TT': [{ zeit, text, von?, bis? }] } } – ohne die Adressen"""
     liste = google_liste()
     with ThreadPoolExecutor(4) as pool:
         geholt = list(pool.map(lambda k: kalender_holen(k['adresse']), liste))
@@ -1244,11 +1271,11 @@ class Anfrage(SimpleHTTPRequestHandler):
                 return self.antwort(HTTPStatus.FORBIDDEN, {'fehler': str(e)})
             except (Ungueltig, ValueError) as e:
                 return self.antwort(HTTPStatus.BAD_REQUEST, {'fehler': str(e)})
-            if anfrage['aktion'] != 'pruefen':
+            if anfrage['aktion'] not in ('pruefen', 'finanzen-pruefen'):
                 self.log_message('Sicherheit: %s', anfrage['aktion'])
             with sperre:
                 return self.antwort(HTTPStatus.OK, sicherheit())
-        if self.path in ('/api/spotify/abmelden', '/api/spotify/code', '/api/google/kalender', '/api/google/entfernen'):
+        if self.path in ('/api/spotify/abmelden', '/api/spotify/code'):
             with sperre:
                 zu = gesperrt()
             if zu:

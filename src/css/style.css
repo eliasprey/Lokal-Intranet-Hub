@@ -354,8 +354,8 @@ button.sp-zeile:active { background: #2e3f63; }
 
 
 /* ================= Kalender ================= */
-.kal { display: flex; }
-#calPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 20px 22px; }
+.kal { display: flex; gap: 14px; }
+#calPanel { flex: 2; min-width: 0; display: flex; flex-direction: column; padding: 20px 22px; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .cal-head h2 { font-size: 22px; }
 .nav { display: flex; gap: 6px; }
@@ -371,6 +371,9 @@ button.sp-zeile:active { background: #2e3f63; }
 .day.other { opacity: .35; }
 .day.feiertag { color: var(--feiertag); background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.4); }
 .day.today { border-color: var(--bronze); background: var(--accent-weich); font-weight: 700; }
+.day { cursor: pointer; }
+@media (hover: hover) { .day:hover { border-color: var(--rand-hell); } }
+.day.gewaehlt { border-color: var(--accent-hell); box-shadow: 0 0 0 1px var(--accent-hell); }
 .day .dot { display: none; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); gap: 3px; }
 .day .dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--termin); display: block; }
 .day .dot i.g { background: var(--google); }
@@ -385,6 +388,35 @@ button.sp-zeile:active { background: #2e3f63; }
 .legende span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
 .legende .l-f::before { background: var(--feiertag); }
 .legende .l-g::before { background: var(--google); }
+
+/* Tagesansicht: rechts neben dem Monat, ein Drittel der Breite (Monat flex 2, Tag flex 1) */
+#tagPanel { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 16px 16px 0; }
+#tagPanel[hidden] { display: none; }
+.tag-kopf { flex: none; display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+.tag-kopf button { flex: none; min-width: 40px; }
+.tag-titel { flex: 1; min-width: 0; text-align: center; }
+.tag-titel h3 { font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag-titel small { display: block; font-size: 12px; color: var(--muted); }
+.tag-ganz { flex: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; max-height: 30%; overflow-y: auto; }
+.tag-ganz[hidden] { display: none; }
+.tag-ganz-zeile { flex: none; padding: 4px 10px; border-radius: 6px; font-size: 13px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; background: rgba(167,139,250,.3); }
+.tag-ganz-zeile.f { background: rgba(248,113,113,.3); }
+.tag-stunden { flex: 1; min-height: 0; overflow-y: auto; border-top: 1px solid var(--rand); }
+.tag-raster { position: relative; margin: 10px 0 16px; }
+.tag-std { height: 52px; border-top: 1px solid rgba(139,151,171,.18); }       /* 52px = STD_PX in kalender.js */
+.tag-std span { display: block; width: 44px; margin-top: -8px; font-size: 11px; line-height: 16px; color: var(--muted);
+  font-variant-numeric: tabular-nums; background: var(--karte); }
+.tag-std:last-child { border-bottom: 1px solid rgba(139,151,171,.18); }
+.tag-spur { position: absolute; top: 0; bottom: 0; left: 50px; right: 0; }
+.tag-termin { position: absolute; min-height: 16px; padding: 3px 8px; border-radius: 6px; overflow: hidden;
+  background: rgba(167,139,250,.3); border-left: 3px solid var(--google); }
+.tag-termin b { display: block; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag-termin small { display: block; font-size: 11px; color: rgba(230,235,243,.7); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag-termin.kurz { display: flex; align-items: baseline; gap: 6px; padding-top: 1px; padding-bottom: 0; }
+.tag-termin.kurz b { min-width: 0; }
+.tag-jetzt { position: absolute; left: -6px; right: 0; height: 2px; margin-top: -1px; background: var(--feiertag); pointer-events: none; }
+.tag-jetzt::before { content: ""; position: absolute; left: 0; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--feiertag); }
 
 /* ================= Finanzen ================= */
 .fin { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr); gap: 14px; }
@@ -517,9 +549,9 @@ button.sp-zeile:active { background: #2e3f63; }
 /* ================= Fenster „Einstellungen“ ================= */
 .fenster.einstellungen { height: fit-content; max-height: min(85%, 720px); overflow-y: auto; }
 /* Reiter alle gleich breit: Raster mit gleichen Spalten statt Flexbox (dort bestimmt der Text die Breite) */
-.es-tabs { flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0 0 6px; }
+.es-tabs { flex: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 0 0 6px; }
 .es-tabs button { min-width: 0; padding: 7px 6px; text-align: center; hyphens: auto; }
-@media (max-width: 719px) { .es-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }   /* schmales Fenster: 3 + 2 */
+@media (max-width: 719px) { .es-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }   /* schmales Fenster: 3 + 3 */
 .es-reiter[hidden] { display: none; }
 form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .es-feld { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); }
@@ -548,16 +580,16 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .es-aufloesung button { padding: 10px 12px; text-align: left; font-size: 15px; font-weight: 500; }
 .es-aufloesung small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
 
-/* ================= Fenster „Google Kalender“ ================= */
-.fenster.google { height: fit-content; max-height: min(85%, 680px); }
-.google .fenster-liste { flex: 0 1 auto; }
+/* Einstellungen → Kalender: verbundene Google Kalender */
+.gk-liste { align-self: stretch; display: flex; flex-direction: column; gap: 8px; }
+.gk-form .suche { align-self: stretch; }
+.gk-form .es-info b { color: var(--text); font-weight: 500; }
 .gk-zeile { flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--karte-hell); }
 .gk-zeile div { flex: 1; min-width: 0; }
 .gk-zeile b, .gk-zeile small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gk-zeile b { font-size: 15px; font-weight: 500; }
 .gk-zeile small { font-size: 13px; color: var(--muted); }
 .gk-zeile small.fehler { color: var(--minus); }
-.google .leer { font-size: 14px; color: var(--muted); }
 /* ================= Formulare in Fenstern (Shortcut, Einstellungen) ================= */
 .fenster.klein { width: min(92%, 480px); height: fit-content; }
 .formular { display: flex; flex-direction: column; gap: 14px; }
@@ -576,14 +608,22 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .formular-knoepfe .loeschen[hidden] { display: none; }
 .wetter-tage > .empty { grid-column: 1 / -1; align-self: center; text-align: center; }
 
-.gk-form { flex: none; display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-.gk-form p { font-size: 13px; line-height: 1.5; color: var(--muted); }
-.gk-form p b { color: var(--text); font-weight: 500; }
-.gk-form .fehler { color: var(--minus); }
-.gk-form .fehler:empty { display: none; }
-
 /* Einstellungen → Sicherheit → Konfiguration gesperrt (sicherheit.js): alles zum Einrichten ausblenden */
-.konfig-gesperrt :is(#finTabNeu, .pos-knoepfe, #googleBtn, #scNeu, #scBearbeiten, #spAbmelden, #spSchritte) { display: none !important; }
+.konfig-gesperrt :is(#finTabNeu, .pos-knoepfe, #scNeu, #scBearbeiten, #spAbmelden, #spSchritte) { display: none !important; }
+
+/* Einstellungen → Sicherheit → Finanzen sichern (sicherheit.js): Beträge verschwommen, bis mit dem PIN entsperrt.
+   Ändern/Entfernen ausgeblendet, sonst stünde die Stückzahl im Formular. */
+#depotWert, #depotGewinn, .pos-wert, .pos-kurs small, #chart, #chartAenderung { transition: filter .25s; }
+.finanzen-verdeckt :is(#depotWert, #depotGewinn, .pos-wert, .pos-kurs small),
+.finanzen-verdeckt .gesamt-ansicht :is(#chart, #chartAenderung) {
+  filter: blur(9px); user-select: none; -webkit-user-select: none; pointer-events: none; }
+.finanzen-verdeckt #depotZahlen { cursor: pointer; }
+.finanzen-verdeckt .pos-knoepfe { display: none; }
+.depot-summe .karte-kopf small { margin-left: auto; }
+.fin-schloss { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 0; padding: 4px 10px; font-size: 12px; color: var(--muted); }
+.fin-schloss svg { width: 14px; height: 14px; }
+.fin-schloss[hidden] { display: none; }
+.finanzen-verdeckt .fin-schloss { color: var(--text); border-color: var(--bronze); }
 
 /* ================= Touch & kleinere Bildschirme ================= */
 @media (pointer: coarse) {
@@ -650,6 +690,8 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
   .depot-liste, .fin-treffer { flex: none; overflow: visible; }
   .geraete-liste { flex: none; overflow: visible; }
   .dash-unten > .karte { min-height: 240px; }
+  .kal.mit-tag { flex-direction: column; }          /* Tagesansicht unter dem Monat, ein Drittel der Höhe */
+  #tagPanel { min-height: 280px; }
 }
 
 /* Handy: Menü als Leiste unten */

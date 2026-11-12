@@ -320,6 +320,7 @@ function zeichneChart() {
   const zeilen = daten.depot.map(berechne), aenderung = $('chartAenderung');
   const einzeln = auswahl ? zeilen.find(z => z.pos.id === auswahl) : null;
   $('chartTitel').textContent = einzeln ? einzeln.pos.name : 'Gesamtes Depot';
+  $('chart').closest('.chart-karte').classList.toggle('gesamt-ansicht', !einzeln);   // Wert des Depots: bei „Finanzen sichern“ verdeckt
   aenderung.textContent = ''; aenderung.className = '';
   if (!zeilen.length) return chart.meldung('Noch nichts im Depot – rechts unter „Hinzufügen“ ein Wertpapier suchen.');
   const v = verlauf[verlaufSchluessel()]?.daten;

@@ -1,14 +1,13 @@
 /* Google Kalender: Termine aus den eigenen Google Kalendern (nur lesen). Der Server holt sie über die geheime
    iCal-Adresse jedes Kalenders (server.py) und liefert sie für den Zeitraum, den der Kalender gerade zeigt.
-   Verbunden und entfernt werden die Kalender im Fenster „Google Kalender“ (Knopf oben auf der Seite Kalender). */
-import { $, klickDanebenSchliesst } from './hilfen.js';
-import { beiAenderung } from './speicher.js';
-import { gesperrt } from './sicherheit.js';
+   Verbunden und entfernt werden die Kalender unter Einstellungen → Kalender (einstellungsfenster.js ruft googleReiter auf). */
+import { $ } from './hilfen.js';
 
 const NEU_MIN = 5;                       // so oft die Termine neu holen (der Server fragt Google höchstens alle 5 min)
 
-export const google = { kalender: [], termine: {} };   // termine: { 'JJJJ-MM-TT': [{ zeit, text }] }
-let bereich = '', geholt = '', nachLaden = () => {};
+/* termine: { 'JJJJ-MM-TT': [{ zeit, text, von?, bis? }] } – von/bis: Teil des Termins an diesem Tag, fehlt bei ganztägigen */
+export const google = { kalender: [], termine: {} };
+let bereich = '', nachLaden = () => {};
 
 export const googleAn = k => google.termine[k] || [];
 
@@ -27,13 +26,12 @@ async function holen() {
     const d = await r.json();
     if (`${von}|${bis}` !== bereich) return;          // inzwischen weitergeblättert
     google.kalender = d.kalender; google.termine = d.termine;
-    geholt = bereich;
   } catch (e) { return; }                // kein Server (z. B. Live Server) oder kurz nicht erreichbar
   nachLaden();
-  if ($('google').open) fensterListe();
+  liste();
 }
 
-/* ================= Fenster: Kalender verbinden und entfernen ================= */
+/* ================= Einstellungen → Kalender: verbinden und entfernen ================= */
 async function post(pfad, daten) {
   const r = await fetch('api/google/' + pfad, { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(daten) });
@@ -41,9 +39,9 @@ async function post(pfad, daten) {
   if (!r.ok) throw new Error(d.fehler || 'Fehler ' + r.status);
 }
 
-function fensterListe() {
-  const liste = $('gListe');
-  liste.innerHTML = '';
+function liste() {
+  const box = $('gListe');
+  box.innerHTML = '';
   google.kalender.forEach(k => {
     const zeile = document.createElement('div'); zeile.className = 'gk-zeile';
     const txt = document.createElement('div');
@@ -52,38 +50,41 @@ function fensterListe() {
     if (k.fehler) sm.className = 'fehler';
     txt.append(b, sm);
     const weg = document.createElement('button'); weg.textContent = 'Entfernen';
+    weg.type = 'button';
     weg.onclick = async () => {
       if (!confirm(`„${k.name}“ nicht mehr anzeigen?`)) return;
       try { await post('entfernen', { id: k.id }); } catch (e) { return meldung(e.message); }
       holen();
     };
     zeile.append(txt, weg);
-    liste.appendChild(zeile);
+    box.appendChild(zeile);
   });
   if (!google.kalender.length) {
-    const e = document.createElement('p'); e.className = 'leer'; e.textContent = 'Noch kein Kalender verbunden.'; liste.appendChild(e);
+    const e = document.createElement('p'); e.className = 'es-info'; e.textContent = 'Noch kein Kalender verbunden.'; box.appendChild(e);
   }
 }
-const meldung = text => { $('gMeldung').textContent = text; };
+const meldung = (text, fehler = true) => { $('gMeldung').textContent = text; $('gMeldung').classList.toggle('fehler', fehler); };
+
+/* Beim Öffnen der Einstellungen: Liste zeigen und frisch holen (z. B. ob eine Adresse inzwischen ungültig ist) */
+export function googleReiter() {
+  meldung(''); $('gAdresse').value = '';
+  liste();
+  if (bereich) holen();
+}
 
 /* neuGezeichnet wird aufgerufen, sobald neue Termine da sind (der Kalender zeichnet sich dann neu) */
 export function starteGoogle(neuGezeichnet) {
   nachLaden = neuGezeichnet;
   setInterval(() => { if (bereich) holen(); }, NEU_MIN * 60e3);
 
-  const fenster = $('google');
-  $('googleBtn').onclick = () => { meldung(''); fensterListe(); fenster.showModal(); if (geholt !== bereich) holen(); };
-  $('googleZu').onclick = () => fenster.close();
-  klickDanebenSchliesst(fenster);
-  beiAenderung(() => { if (gesperrt()) fenster.close(); });   // Einstellungen → Sicherheit: Knopf ist dann weg
   $('gForm').addEventListener('submit', async e => {
     e.preventDefault();
     const adresse = $('gAdresse').value.trim();
     if (!adresse) return $('gAdresse').focus();
-    meldung('Verbinde …'); $('gOk').disabled = true;
+    meldung('Verbinde …', false); $('gOk').disabled = true;
     try {
       await post('kalender', { adresse });
-      $('gAdresse').value = ''; meldung('');
+      $('gAdresse').value = ''; meldung('Verbunden.', false);
       await holen();
     } catch (e) { meldung(e.message); }
     $('gOk').disabled = false;
