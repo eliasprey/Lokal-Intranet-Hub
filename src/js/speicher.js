@@ -4,7 +4,8 @@
      wenn der Server kurz nicht erreichbar ist.
    - Jede Änderung wird sofort angezeigt und kommt in eine Warteschlange, die an den Server geht.
      Klappt das nicht, bleibt sie gespeichert und wird später nochmal geschickt.
-   - Alle paar Sekunden wird nachgesehen, ob ein anderes Gerät etwas geändert hat.
+   - Änderungen anderer Geräte kommen sofort: Eine Anfrage bleibt beim Server offen (api/daten?warten=1) und kommt
+     zurück, sobald sich etwas ändert – spätestens nach 25 Sekunden, dann geht die nächste los (Long-Polling).
    Wer sich für Änderungen interessiert, meldet sich mit beiAenderung() an, für den Verbindungsstand mit beiStatus(). */
 
 const STORE_T = 'intranet.termine.v1';          // Kopie der Daten (vor der Datenbank lagen hier die Daten des Geräts)
@@ -17,8 +18,10 @@ const STORE_SI = 'intranet.sicherheit.v1';
 const STORE_W = 'intranet.warteschlange.v1';    // Änderungen, die noch nicht beim Server angekommen sind
 const STORE_V = 'intranet.version.v1';          // Stand der Kopie (zählt der Server bei jeder Änderung hoch)
 const STORE_M = 'intranet.uebernommen.v1';      // alte Daten dieses Geräts sind schon an den Server gegangen
-const ABFRAGE_SEK = 10;                          // so oft bei anderen Geräten nachsehen
-const NOCHMAL_SEK = 15;                          // so lange nach einem Fehler warten
+const ABFRAGE_SEK = 10;                          // so oft prüfen, ob noch etwas zu senden ist bzw. die Abfrage läuft
+const NOCHMAL_SEK = 15;                          // so lange nach einem Fehler beim Senden warten
+const WIEDER_SEK = 3;                            // so lange nach einem Fehler beim Abholen warten (z. B. Server startet neu)
+const WARTEN_SEK = 25;                           // so lange hält der Server die Anfrage offen (WARTEN_SEK in server.py)
 
 /* termine: { 'JJJJ-MM-TT': [{ id, text, zeit }] }, urlaube: [{ id, text, von, bis }],
    depot: [{ id, symbol, name, art, boerse, menge, einkauf }] – menge und einkauf (Euro gesamt, '' = unbekannt) als Text,
@@ -162,30 +165,60 @@ async function abschicken() {
   if (ok) warteschlange.length ? abschicken() : holen();   // danach den Stand aller Geräte holen
 }
 
+function uebernehmen(d) {
+  if (d.version < mindestVersion) return;   // Antwort ist älter als die eigene, gerade gespeicherte Änderung
+  daten.termine = d.termine; daten.urlaube = d.urlaube; daten.notizen = d.notizen; daten.depot = d.depot || [];
+  daten.profil = { ...PROFIL_LEER, ...d.profil }; daten.shortcuts = d.shortcuts || [];
+  daten.sicherheit = { ...SICHERHEIT_LEER, ...d.sicherheit };
+  warteschlange.forEach(anwenden);          // eigene, noch nicht gesendete Änderungen obendrauf
+  version = d.version;
+  schreib(STORE_V, version);
+  kopieSpeichern();
+  if (!warteschlange.length) status('ok');
+  melden();
+}
+
+/* Stand holen und danach auf Änderungen warten – in einer Schleife, solange die Seite offen ist.
+   Ein neuer Aufruf (z. B. nach dem eigenen Senden) bricht die laufende Abfrage ab und fragt sofort neu. */
+let abholNr = 0, abfrage = null, lauscht = false;
+const pause = ms => new Promise(r => setTimeout(r, ms));
 async function holen() {
-  try {
-    const r = await fetch('api/daten', { cache: 'no-store', headers: version != null ? { 'If-None-Match': `"v${version}"` } : {} });
-    if (r.status === 404) return status('lokal');
-    if (r.status === 304) return status('ok');
-    if (!r.ok) throw new Error('Fehler ' + r.status);
-    const d = await r.json();
-    if (d.version < mindestVersion) return;   // Antwort ist älter als die eigene, gerade gespeicherte Änderung
-    daten.termine = d.termine; daten.urlaube = d.urlaube; daten.notizen = d.notizen; daten.depot = d.depot || [];
-    daten.profil = { ...PROFIL_LEER, ...d.profil }; daten.shortcuts = d.shortcuts || [];
-    daten.sicherheit = { ...SICHERHEIT_LEER, ...d.sicherheit };
-    warteschlange.forEach(anwenden);          // eigene, noch nicht gesendete Änderungen obendrauf
-    version = d.version;
-    schreib(STORE_V, version);
-    kopieSpeichern();
-    if (!warteschlange.length) status('ok');
-    melden();
-  } catch (e) {
-    status('offline');
+  const nr = ++abholNr;
+  abfrage?.abort();
+  lauscht = true;
+  let warten = false;                       // erste Anfrage sofort beantworten lassen, danach warten
+  while (nr === abholNr) {
+    const ctrl = abfrage = new AbortController();
+    const wecker = setTimeout(() => ctrl.abort(), ((warten ? WARTEN_SEK : 0) + 15) * 1000);   // hängende Verbindung
+    const los = Date.now();
+    try {
+      const r = await fetch('api/daten' + (warten ? '?warten=1' : ''), { cache: 'no-store', signal: ctrl.signal,
+        headers: version != null ? { 'If-None-Match': `"v${version}"` } : {} });
+      if (r.status === 404) { status('lokal'); break; }
+      if (r.status === 304) {
+        if (!warteschlange.length) status('ok');
+        if (warten && Date.now() - los < 2000) await pause(ABFRAGE_SEK * 1000);   // Server wartet nicht (ältere Version)
+      } else {
+        if (!r.ok) throw new Error('Fehler ' + r.status);
+        const d = await r.json();
+        if (nr !== abholNr) break;
+        uebernehmen(d);
+      }
+      warten = true;
+    } catch (e) {
+      if (nr !== abholNr) break;            // abgebrochen, eine neue Abfrage läuft schon
+      status('offline');
+      warten = false;
+      await pause(WIEDER_SEK * 1000);
+    } finally {
+      clearTimeout(wecker);
+    }
   }
+  if (nr === abholNr) lauscht = false;
 }
 
 abschicken();
-setInterval(() => { if (!document.hidden) abschicken(); }, ABFRAGE_SEK * 1000);
+setInterval(() => { if (warteschlange.length) abschicken(); else if (!lauscht) holen(); }, ABFRAGE_SEK * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) abschicken(); });
 window.addEventListener('online', () => abschicken());
 
@@ -193,7 +226,7 @@ const neueId = () => Date.now().toString(36) + Math.random().toString(36).slice(
 
 /* ================= Notizen ================= */
 export function notizenSpeichern(text) {
-  aendern({ op: 'notizen', text }, 800);   // erst schicken, wenn kurz nicht getippt wurde
+  aendern({ op: 'notizen', text }, 300);   // erst schicken, wenn kurz nicht getippt wurde
 }
 
 /* ================= Depot ================= */

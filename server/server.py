@@ -25,7 +25,7 @@ Updates: Gibt es auf GitHub einen neuen Commit, lädt der Server src/ und server
 prüft sie und startet sich mit dem neuen Code neu. Die Seiten im Browser merken das über /api/version und laden neu.
 
 Schnittstelle:
-  GET  /api/daten         → { version, termine: { 'JJJJ-MM-TT': [{ id, zeit, text }] }, urlaube: [...], notizen,
+  GET  /api/daten[?warten=1] → { version, termine: { 'JJJJ-MM-TT': [{ id, zeit, text }] }, urlaube: [...], notizen,
                               depot: [{ id, symbol, name, art, boerse, menge, einkauf }],
                               profil: { name, hub, ort: { name, info, lat, lon, bundesland } | null }, shortcuts: [{ id, name, url }],
                               sicherheit: { pin, gesperrt, finanzen } }
@@ -129,8 +129,19 @@ def wert(name, standard=''):
     return zeile[0] if zeile else standard
 
 
+# Sofort-Abgleich: GET /api/daten?warten=1 mit dem aktuellen Stand (If-None-Match) wartet bis zu WARTEN_SEK, bis sich
+# etwas ändert, und antwortet dann sofort – so sehen alle Geräte Notizen usw. ohne Verzögerung (Long-Polling).
+WARTEN_SEK = 25
+neue_daten = threading.Condition()
+aenderungen = [0]                        # zählt jede neue Version hoch (weckt die wartenden Anfragen)
+
+
 def setze(name, inhalt):
     db.execute('INSERT INTO werte (name, wert) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET wert = excluded.wert', (name, str(inhalt)))
+    if name == 'version':
+        with neue_daten:
+            aenderungen[0] += 1
+            neue_daten.notify_all()
 
 
 def version():
@@ -841,10 +852,10 @@ def live(symbole):
 # ================= Google Kalender: Termine über die geheime iCal-Adresse (nur lesen) =================
 # Google bietet für jeden Kalender eine „geheime Adresse im iCal-Format“. Damit holt der Server die Termine ohne
 # Anmeldung bei Google. Die Adressen liegen in der Datenbank (Wert 'google_kalender') und gehen nie an den Browser –
-# wer sie kennt, kann den Kalender lesen. Abgerufen wird höchstens alle 5 Minuten, für alle Geräte zusammen.
+# wer sie kennt, kann den Kalender lesen. Abgerufen wird höchstens jede Minute, für alle Geräte zusammen.
 # Wiederholungen werden selbst ausgerechnet (FREQ DAILY/WEEKLY/MONTHLY/YEARLY mit INTERVAL, COUNT, UNTIL, BYDAY,
 # BYMONTHDAY und BYMONTH – das, was Google beim Anlegen erzeugt), samt Ausnahmen (EXDATE) und einzeln geänderten Terminen.
-GOOGLE_SEK = 300
+GOOGLE_SEK = 60                          # so lange gilt ein abgerufener Kalender
 ICAL_MAX = 20_000_000                    # Bytes je Kalender
 ical_cache, ical_sperre = {}, threading.Lock()   # adresse → (Abrufzeit, { name, termine })
 WOCHENTAGE = {'MO': 0, 'TU': 1, 'WE': 2, 'TH': 3, 'FR': 4, 'SA': 5, 'SU': 6}
@@ -1042,7 +1053,7 @@ def wiederholungen(start, tz, regel, bis):
 
 
 def kalender_holen(adresse):
-    """iCal-Datei laden und lesen (5 Minuten zwischengespeichert). → { name, termine } oder { fehler }"""
+    """iCal-Datei laden und lesen (1 Minute zwischengespeichert). → { name, termine } oder { fehler }"""
     with ical_sperre:
         alt = ical_cache.get(adresse)
     if alt and time.time() - alt[0] < GOOGLE_SEK:
@@ -1170,9 +1181,18 @@ class Anfrage(SimpleHTTPRequestHandler):
     def do_GET(self):
         pfad = self.path.split('?', 1)[0]
         if pfad == '/api/daten':
+            alt = self.headers.get('If-None-Match')
+            if 'warten=1' in self.path and alt:   # Stand ist aktuell → warten, bis sich etwas ändert
+                with sperre:
+                    aktuell = alt == f'"v{version()}"'
+                    with neue_daten:
+                        zaehler = aenderungen[0]
+                if aktuell:
+                    with neue_daten:
+                        neue_daten.wait_for(lambda: aenderungen[0] != zaehler, timeout=WARTEN_SEK)
             with sperre:
                 etag = f'"v{version()}"'
-                if self.headers.get('If-None-Match') == etag:
+                if alt == etag:
                     return self.antwort(HTTPStatus.NOT_MODIFIED, kopf={'ETag': etag})
                 return self.antwort(HTTPStatus.OK, alles(), {'ETag': etag})
         if pfad == '/api/version':

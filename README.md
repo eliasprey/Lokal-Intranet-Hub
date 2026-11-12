@@ -165,8 +165,9 @@ wird herausgerechnet. Die Wahl gilt nur für dieses Gerät (sie liegt im Browser
 **Termine, Urlaube, Notizen, das Depot, die Shortcuts und die persönlichen Angaben** liegen in der Datenbank auf dem Server (`intranet.db`, im Container
 unter `/data`, siehe [Installation auf Linux](#installation-auf-linux)). Jedes Gerät – PC, Tablet, Handy – sieht dieselben Einträge.
 
-- Jede Änderung erscheint sofort und wird an den Server geschickt. Die anderen Geräte sehen sie nach
-  spätestens 10 Sekunden (beim Entsperren des Tablets sofort).
+- Jede Änderung erscheint sofort und wird an den Server geschickt. Die anderen Geräte sehen sie ebenfalls
+  sofort (etwa eine halbe Sekunde nach dem Tippen): Jedes Gerät hält eine Anfrage beim Server offen, und der
+  Server antwortet, sobald sich etwas ändert (`/api/daten?warten=1`).
 - Oben rechts zeigt eine Wolke den Stand: **grün „Synchron“** = alles in der Datenbank, **gelb
   „Offline“** = Server gerade nicht erreichbar. Die Änderungen sind dann im Browser gesichert und werden
   automatisch nachgeholt. **Grau „Nur lokal“** = Seite ohne Server geöffnet (z. B. mit Live Server).
@@ -226,7 +227,7 @@ Umgebungsvariablen setzen, z. B.
 ## Google Kalender verbinden
 
 Die Termine kommen über die **geheime iCal-Adresse** des Kalenders – ohne Google-Anmeldung und ohne
-Google-Cloud-Projekt. Der Server holt sie höchstens alle 5 Minuten für alle Geräte zusammen.
+Google-Cloud-Projekt. Der Server holt sie höchstens jede Minute für alle Geräte zusammen.
 
 1. Google Kalender **am PC** öffnen (<https://calendar.google.com>) → Zahnrad → **Einstellungen**.
 2. Links unter „Einstellungen für meine Kalender“ den Kalender wählen → **Kalender integrieren**.

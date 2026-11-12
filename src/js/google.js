@@ -3,7 +3,7 @@
    Verbunden und entfernt werden die Kalender unter Einstellungen → Kalender (einstellungsfenster.js ruft googleReiter auf). */
 import { $ } from './hilfen.js';
 
-const NEU_MIN = 5;                       // so oft die Termine neu holen (der Server fragt Google höchstens alle 5 min)
+const NEU_MIN = 1;                       // so oft die Termine neu holen (der Server fragt Google höchstens jede Minute)
 
 /* termine: { 'JJJJ-MM-TT': [{ zeit, text, von?, bis? }] } – von/bis: Teil des Termins an diesem Tag, fehlt bei ganztägigen */
 export const google = { kalender: [], termine: {} };
@@ -75,7 +75,10 @@ export function googleReiter() {
 /* neuGezeichnet wird aufgerufen, sobald neue Termine da sind (der Kalender zeichnet sich dann neu) */
 export function starteGoogle(neuGezeichnet) {
   nachLaden = neuGezeichnet;
-  setInterval(() => { if (bereich) holen(); }, NEU_MIN * 60e3);
+  setInterval(() => { if (bereich && !document.hidden) holen(); }, NEU_MIN * 60e3);
+  // sofort nachsehen, wenn der Kalender (oder „Nächste 7 Tage“ im Dashboard) ins Bild kommt
+  document.addEventListener('visibilitychange', () => { if (bereich && !document.hidden) holen(); });
+  document.addEventListener('seitenwechsel', e => { if (bereich && /Kalender|Dashboard/.test(e.detail)) holen(); });
 
   $('gForm').addEventListener('submit', async e => {
     e.preventDefault();
