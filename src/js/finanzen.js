@@ -1,12 +1,14 @@
 /* Finanzen: links Gesamtwert und Gewinn/Verlust seit dem Kauf, darunter das Diagramm (Verlauf über Intraday … MAX),
-   rechts die Reiter „Hinzufügen“ (Aktien, ETFs, Fonds und Kryptos suchen und mit Stückzahl und Einkaufskurs hinzufügen)
-   und „Assets“ (oben „Gesamt“, darunter jede Position). Was dort gewählt ist – Gesamt oder ein einzelnes Asset –,
-   zeigen Summe und Diagramm. Die Positionen liegen in der Datenbank (speicher.js), die Kurse holt der Server bei
-   Yahoo Finance (server.py): den Verlauf alle paar Minuten, den aktuellen Kurs alle 5 Sekunden, solange die Seite offen ist.
+   rechts die Reiter „Hinzufügen“ (Aktien, ETFs, Fonds und Kryptos suchen und mit Stückzahl und Einkaufskurs hinzufügen),
+   „Assets“ (oben „Gesamt“, darunter jede Position) und „Watchlist“ (Wertpapiere, die man nur beobachtet – mit Kurs und
+   heutiger Entwicklung; „Ins Depot“ öffnet das Formular und nimmt es nach dem Hinzufügen von der Watchlist).
+   Was unter „Assets“ gewählt ist – Gesamt oder ein einzelnes Asset –, zeigen Summe und Diagramm.
+   Positionen und Watchlist liegen in der Datenbank (speicher.js), die Kurse holt der Server bei Yahoo Finance
+   (server.py): den Verlauf alle paar Minuten, den aktuellen Kurs alle 5 Sekunden, solange die Seite offen ist.
    Werte und Gewinn sind in Euro (inkl. Wechselkurs), der Kurs einer Position in ihrer Börsenwährung. */
 import { KURSE_ALLE_MIN, LIVE_ALLE_SEK } from './einstellungen.js';
 import { $ } from './hilfen.js';
-import { daten, beiAenderung, depotSpeichern, depotLoeschen } from './speicher.js';
+import { daten, beiAenderung, depotSpeichern, depotLoeschen, watchHinzufuegen, watchLoeschen } from './speicher.js';
 import { diagramm } from './diagramm.js';
 import { gesperrt } from './sicherheit.js';
 
@@ -64,11 +66,12 @@ async function abfrage(art, symbole, mehr = '') {
   return r.json();
 }
 const depotSymbole = () => [...new Set(daten.depot.map(p => p.symbol))].sort();
+const alleSymbole = () => [...new Set([...daten.depot, ...daten.watchlist].map(p => p.symbol))].sort();   // Kurse für Depot und Watchlist
 
 /* Kurse samt Wechselkurs, alle paar Minuten */
 let laedt = false;
 async function aktualisieren() {
-  const symbole = depotSymbole();
+  const symbole = alleSymbole();
   if (!symbole.length || laedt) return zeigeDepot();
   laedt = true;
   try {
@@ -87,7 +90,7 @@ async function aktualisieren() {
 let liveLaedt = false;
 const sichtbar = () => !document.hidden && !document.querySelector('.fin').inert;
 async function liveHolen() {
-  const symbole = depotSymbole();
+  const symbole = alleSymbole();
   if (!symbole.length || liveLaedt || !sichtbar()) return;
   liveLaedt = true;
   try {
@@ -157,6 +160,7 @@ function zeigeDepot() {
     zeilenEl.clear();
     liste.replaceChildren(el('div', 'empty', 'Noch nichts im Depot – unter „Hinzufügen“ suchen und hinzufügen.'));
     zeichneChart();
+    zeigeWatch();
     return;
   }
   liste.querySelector(':scope > .empty')?.remove();
@@ -171,6 +175,7 @@ function zeigeDepot() {
     fuelle(e, z);
   });
   zeichneChart();
+  zeigeWatch();
 }
 
 /* Gesamt oder ein Asset anzeigen */
@@ -220,6 +225,19 @@ function neueZeile(id) {
   return e;
 }
 
+/* Kurs kurz grün bzw. rot aufleuchten lassen, wenn er sich geändert hat → Klasse für das Feld e.kurs.b */
+function blinken(e, kurs) {
+  let k = '';
+  if (e.letzterKurs != null && kurs !== e.letzterKurs) {
+    e.kurs.b.classList.remove('auf', 'ab'); void e.kurs.b.offsetWidth;
+    k = kurs > e.letzterKurs ? 'auf' : 'ab';
+  } else if (e.kurs.b.classList.contains('auf') || e.kurs.b.classList.contains('ab')) {
+    k = e.kurs.b.className;                       // Aufleuchten nicht abbrechen
+  }
+  e.letzterKurs = kurs;
+  return k;
+}
+
 function setze(f, b, s, bKlasse = '', sKlasse = '') {
   if (f.b.textContent !== b) f.b.textContent = b;
   if (f.s.textContent !== s) f.s.textContent = s;
@@ -234,20 +252,62 @@ function fuelle(e, z) {
   if (z.fehler) {
     setze(e.kurs, '–', z.fehler, '', 'warnung');
   } else {
-    let blinken = '';                             // Kurs kurz grün bzw. rot aufleuchten lassen, wenn er sich geändert hat
-    if (e.letzterKurs != null && z.kurs !== e.letzterKurs) {
-      e.kurs.b.classList.remove('auf', 'ab'); void e.kurs.b.offsetWidth;
-      blinken = z.kurs > e.letzterKurs ? 'auf' : 'ab';
-    } else if (e.kurs.b.classList.contains('auf') || e.kurs.b.classList.contains('ab')) {
-      blinken = e.kurs.b.className;               // Aufleuchten nicht abbrechen
-    }
-    setze(e.kurs, kursText(z.kurs, z.waehrung), stueck(pos.menge) + ' Stück', blinken);
+    setze(e.kurs, kursText(z.kurs, z.waehrung), stueck(pos.menge) + ' Stück', blinken(e, z.kurs));
     e.kurs.title = 'Kurs von ' + uhrzeit(z.zeit) + (z.einkauf != null ? ' · Kauf ' + kursText(z.einkauf, 'EUR') : '');
-    e.letzterKurs = z.kurs;
   }
   const s = summe([z]);
   setze(e.wert, z.wert != null ? geld(z.wert) : '–', z.gewinn != null ? gewinnText(s) : z.fehler ? ' ' : 'kein Einkaufskurs',
     '', z.gewinn != null ? richtung(z.gewinn) : 'leer');
+}
+
+/* ================= Watchlist (rechts) ================= */
+/* Je Wertpapier: Name, aktueller Kurs in der Börsenwährung und die Entwicklung seit dem letzten Schlusskurs */
+const watchEl = new Map();                        // id → { box, name, kurs }
+function zeigeWatch() {
+  const liste = $('watchListe'), wl = daten.watchlist;
+  $('watchAnzahl').textContent = wl.length || '';
+  if (!wl.length) {
+    watchEl.clear();
+    liste.replaceChildren(el('div', 'empty', 'Die Watchlist ist leer – unter „Hinzufügen“ ein Wertpapier suchen und „Auf die Watchlist“ wählen.'));
+    return;
+  }
+  liste.querySelector(':scope > .empty')?.remove();
+  const ids = new Set(wl.map(w => w.id));
+  for (const [id, e] of watchEl) if (!ids.has(id)) { e.box.remove(); watchEl.delete(id); }
+  wl.forEach((w, i) => {
+    let e = watchEl.get(w.id);
+    if (!e) { e = neueWatchZeile(w.id); watchEl.set(w.id, e); }
+    if (liste.children[i] !== e.box) liste.insertBefore(e.box, liste.children[i] || null);
+    fuelleWatch(e, w);
+  });
+}
+
+function neueWatchZeile(id) {
+  const e = { box: el('div', 'pos watch'), name: feld('pos-name'), kurs: feld('pos-kurs') };
+  const knoepfe = el('div', 'watch-knoepfe');
+  const insDepot = el('button', 'ins-depot');
+  insDepot.innerHTML = svg('<path d="M12 5v14M5 12h14"/>'); insDepot.append('Ins Depot');
+  insDepot.title = 'Mit Stückzahl ins Depot übernehmen';
+  insDepot.onclick = () => { const w = daten.watchlist.find(x => x.id === id); if (w) uebernehmen(w); };
+  const weg = el('button', 'weg'); weg.innerHTML = svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>');
+  weg.title = weg.ariaLabel = 'Von der Watchlist entfernen';
+  weg.onclick = () => {
+    const w = daten.watchlist.find(x => x.id === id);
+    if (w && confirm(`„${w.name}“ von der Watchlist entfernen?`)) { if (ausWatch === id) formZu(); watchLoeschen(id); }
+  };
+  knoepfe.append(insDepot, weg);
+  e.box.append(e.name, e.kurs, knoepfe);
+  return e;
+}
+
+function fuelleWatch(e, w) {
+  setze(e.name, w.name, [w.symbol, w.art].filter(Boolean).join(' · '));
+  const k = kurse[w.symbol], l = live[w.symbol];
+  if (!k || k.fehler) { setze(e.kurs, '–', k?.fehler || (kursFehler ? 'Kurs nicht abrufbar' : 'Kurs wird geladen …'), '', 'warnung'); return; }
+  const kurs = l && !l.fehler ? l.kurs : k.kurs, zeit = l && !l.fehler ? l.zeit : k.zeit;
+  const p = k.ref?.tag ? kurs / k.ref.tag - 1 : null;
+  setze(e.kurs, kursText(kurs, k.waehrung), p != null ? 'heute ' + prozent(p) : ' ', blinken(e, kurs), p != null ? richtung(p) : '');
+  e.kurs.title = 'Kurs von ' + uhrzeit(zeit);
 }
 
 /* ================= Diagramm ================= */
@@ -347,16 +407,19 @@ function zeichneChart() {
 }
 
 /* ================= Reiter rechts ================= */
-let reiterVonHand = false;                        // solange nicht selbst gewählt: mit Depot „Assets“, ohne „Hinzufügen“
-function reiter(name) {                           // 'assets' oder 'neu'
+let reiterVonHand = false, offenerReiter = '';    // solange nicht selbst gewählt: mit Depot „Assets“, ohne „Hinzufügen“
+function reiter(name) {                           // 'assets', 'watch' oder 'neu'
+  offenerReiter = name;
   $('finAssets').hidden = name !== 'assets';
+  $('finWatch').hidden = name !== 'watch';
   $('finNeu').hidden = name !== 'neu';
   $('finTabAssets').classList.toggle('on', name === 'assets');
+  $('finTabWatch').classList.toggle('on', name === 'watch');
   $('finTabNeu').classList.toggle('on', name === 'neu');
 }
 
 /* ================= Suchen und hinzufügen (rechts) ================= */
-let gewaehlt = null, bearbeitet = null, suchNr = 0, suchTimer;
+let gewaehlt = null, bearbeitet = null, ausWatch = null, suchNr = 0, suchTimer;   // ausWatch: id auf der Watchlist, die gerade ins Depot kommt
 
 async function suchen(q) {
   const box = $('finTreffer'), nr = ++suchNr;
@@ -413,11 +476,15 @@ function formAuf(t) {
   $('finFehler').textContent = '';
   $('finSuche').hidden = $('finTreffer').hidden = true;
   $('finForm').hidden = false;
+  const drauf = daten.watchlist.some(w => w.symbol === t.symbol);   // Knopf „Auf die Watchlist“ nur beim Hinzufügen
+  $('finZurWatch').hidden = !!bearbeitet || !!ausWatch;
+  $('finZurWatch').disabled = drauf;
+  $('finZurWatch').textContent = drauf ? 'Schon auf der Watchlist' : 'Auf die Watchlist';
   vorschau(t.symbol);
 }
 
 function waehlen(t) {
-  bearbeitet = null;
+  bearbeitet = ausWatch = null;
   $('finTitel').textContent = 'Hinzufügen';
   $('finOk').textContent = 'Zum Depot hinzufügen';
   $('finMenge').value = ''; $('finEinkauf').value = '';
@@ -425,8 +492,18 @@ function waehlen(t) {
   $('finMenge').focus();
 }
 
+/* Von der Watchlist ins Depot: Formular mit dem Wertpapier, nach dem Hinzufügen verschwindet es von der Watchlist */
+function uebernehmen(w) {
+  waehlen(w);
+  ausWatch = w.id;
+  $('finZurWatch').hidden = true;
+  $('finTitel').textContent = 'Ins Depot';
+  reiter('neu');
+  $('finMenge').focus();
+}
+
 function bearbeiten(pos) {
-  bearbeitet = pos.id;
+  bearbeitet = pos.id; ausWatch = null;
   $('finTitel').textContent = 'Position ändern';
   $('finOk').textContent = 'Speichern';
   $('finMenge').value = eingabe(pos.menge);
@@ -436,7 +513,7 @@ function bearbeiten(pos) {
 }
 
 function formZu() {
-  gewaehlt = bearbeitet = null;
+  gewaehlt = bearbeitet = ausWatch = null;
   $('finTitel').textContent = 'Hinzufügen';
   $('finForm').hidden = true;
   $('finSuche').hidden = $('finTreffer').hidden = false;
@@ -449,8 +526,17 @@ function speichern(e) {
   if (einkauf == null) { $('finFehler').textContent = 'Einkaufskurs bitte als Euro-Betrag pro Stück, z. B. 320,09 oder 1.500,50.'; $('finEinkauf').focus(); return; }
   const { symbol, name, art, boerse } = gewaehlt;
   depotSpeichern({ id: bearbeitet || undefined, symbol, name, art, boerse, menge, einkauf });
+  if (ausWatch && daten.watchlist.some(w => w.id === ausWatch)) watchLoeschen(ausWatch);   // übertragen = von der Watchlist runter
   formZu();
   reiter('assets');                               // die neue bzw. geänderte Position gleich sehen
+  aktualisieren();
+}
+
+function zurWatchlist() {
+  const { symbol, name, art, boerse } = gewaehlt;
+  watchHinzufuegen({ symbol, name, art, boerse });
+  formZu();
+  reiter('watch');
   aktualisieren();
 }
 
@@ -461,6 +547,8 @@ export function starteFinanzen() {
   reiter(daten.depot.length || gesperrt() ? 'assets' : 'neu');
   $('finTabAssets').onclick = () => { reiterVonHand = true; reiter('assets'); };
   $('finTabNeu').onclick = () => { reiterVonHand = true; reiter('neu'); };
+  $('finTabWatch').onclick = () => { reiterVonHand = true; reiter('watch'); };
+  $('finZurWatch').onclick = zurWatchlist;
   document.querySelectorAll('#zeitraeume button').forEach(b => {
     b.onclick = () => { zeitraum = b.dataset.zeitraum; ansichtMerken(); zeichneChart(); verlaufHolen(); };
   });
@@ -472,12 +560,12 @@ export function starteFinanzen() {
 
   let bekannte = '';
   beiAenderung(() => {                            // neue Wertpapiere (auch von anderen Geräten) → gleich Kurse holen
-    const jetzt = depotSymbole().join();
-    if (gesperrt()) { if (gewaehlt) formZu(); reiter('assets'); }   // Einstellungen → Sicherheit: nur ansehen
+    const jetzt = alleSymbole().join();
+    if (gesperrt()) { if (gewaehlt) formZu(); if (offenerReiter === 'neu') reiter('assets'); }   // Einstellungen → Sicherheit: nur ansehen
     else if (!reiterVonHand && !gewaehlt) reiter(daten.depot.length ? 'assets' : 'neu');   // Depot kam erst vom Server
     if (jetzt !== bekannte) { bekannte = jetzt; aktualisieren().then(liveHolen); if (sichtbar()) verlaufHolen(); } else zeigeDepot();
   });
-  bekannte = depotSymbole().join();
+  bekannte = alleSymbole().join();
   aktualisieren();
   setInterval(() => { if (!document.hidden) aktualisieren(); }, KURSE_ALLE_MIN * 60e3);
   setInterval(liveHolen, LIVE_ALLE_SEK * 1000);

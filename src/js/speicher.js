@@ -12,6 +12,7 @@ const STORE_T = 'intranet.termine.v1';          // Kopie der Daten (vor der Date
 const STORE_U = 'intranet.urlaube.v1';
 const STORE_N = 'intranet.notizen.v1';
 const STORE_D = 'intranet.depot.v1';
+const STORE_WL = 'intranet.watchlist.v1';
 const STORE_P = 'intranet.profil.v1';
 const STORE_S = 'intranet.shortcuts.v1';
 const STORE_SI = 'intranet.sicherheit.v1';
@@ -25,13 +26,14 @@ const WARTEN_SEK = 25;                           // so lange hält der Server di
 
 /* termine: { 'JJJJ-MM-TT': [{ id, text, zeit }] }, urlaube: [{ id, text, von, bis }],
    depot: [{ id, symbol, name, art, boerse, menge, einkauf }] – menge und einkauf (Euro gesamt, '' = unbekannt) als Text,
+   watchlist: [{ id, symbol, name, art, boerse }] – nur beobachtete Wertpapiere (finanzen.js),
    profil: { name, hub, ort: { name, info, lat, lon, bundesland } | null } – Begrüßung, Name des Intranets, Ort für
    Wetter/Sonne/Feiertage, shortcuts: [{ id, name, url }],
-   sicherheit: { pin, gesperrt, finanzen } – PIN für die Einstellungen an, Konfiguration auf den Seiten gesperrt,
-   Finanzen mit eigenem PIN gesichert (sicherheit.js) */
+   sicherheit: { pin, gesperrt, finanzen, finanzenStellen } – PIN für die Einstellungen an, Konfiguration auf den Seiten
+   gesperrt, Finanzen mit eigenem PIN gesichert und dessen Länge (0 = unbekannt) (sicherheit.js) */
 const PROFIL_LEER = { name: '', hub: '', ort: null };
-const SICHERHEIT_LEER = { pin: false, gesperrt: false, finanzen: false };
-export const daten = { termine: {}, urlaube: [], notizen: '', depot: [], profil: { ...PROFIL_LEER }, shortcuts: [],
+const SICHERHEIT_LEER = { pin: false, gesperrt: false, finanzen: false, finanzenStellen: 0 };
+export const daten = { termine: {}, urlaube: [], notizen: '', depot: [], watchlist: [], profil: { ...PROFIL_LEER }, shortcuts: [],
   sicherheit: { ...SICHERHEIT_LEER } };
 
 const lies = (k, standard) => { try { return JSON.parse(localStorage.getItem(k)) ?? standard; } catch (e) { return standard; } };
@@ -41,6 +43,7 @@ function kopieLaden() {
   daten.termine = lies(STORE_T, {});
   daten.urlaube = lies(STORE_U, []);
   daten.depot = lies(STORE_D, []);
+  daten.watchlist = lies(STORE_WL, []);
   daten.profil = { ...PROFIL_LEER, ...lies(STORE_P, {}) };
   daten.shortcuts = lies(STORE_S, []);
   daten.sicherheit = { ...SICHERHEIT_LEER, ...lies(STORE_SI, {}) };
@@ -50,6 +53,7 @@ function kopieSpeichern() {
   schreib(STORE_T, daten.termine);
   schreib(STORE_U, daten.urlaube);
   schreib(STORE_D, daten.depot);
+  schreib(STORE_WL, daten.watchlist);
   schreib(STORE_P, daten.profil);
   schreib(STORE_S, daten.shortcuts);
   schreib(STORE_SI, daten.sicherheit);
@@ -105,6 +109,11 @@ function anwenden(a) {
     if (alt) Object.assign(alt, { menge: a.menge, einkauf: a.einkauf }); else daten.depot.push(pos);
   } else if (a.op === 'depot-') {
     daten.depot = daten.depot.filter(p => p.id !== a.id);
+  } else if (a.op === 'watch+') {
+    const { op, ...w } = a;
+    if (!daten.watchlist.some(x => x.symbol === a.symbol)) daten.watchlist.push(w);
+  } else if (a.op === 'watch-') {
+    daten.watchlist = daten.watchlist.filter(x => x.id !== a.id);
   } else if (a.op === 'profil') {
     const { op, ...felder } = a;
     daten.profil = { ...daten.profil, ...felder };
@@ -168,6 +177,7 @@ async function abschicken() {
 function uebernehmen(d) {
   if (d.version < mindestVersion) return;   // Antwort ist älter als die eigene, gerade gespeicherte Änderung
   daten.termine = d.termine; daten.urlaube = d.urlaube; daten.notizen = d.notizen; daten.depot = d.depot || [];
+  daten.watchlist = d.watchlist || [];
   daten.profil = { ...PROFIL_LEER, ...d.profil }; daten.shortcuts = d.shortcuts || [];
   daten.sicherheit = { ...SICHERHEIT_LEER, ...d.sicherheit };
   warteschlange.forEach(anwenden);          // eigene, noch nicht gesendete Änderungen obendrauf
@@ -236,6 +246,17 @@ export function depotSpeichern(pos) {                    // { id?, symbol, name,
 }
 export function depotLoeschen(id) {
   aendern({ op: 'depot-', id });
+  melden();
+}
+
+/* ================= Watchlist ================= */
+export function watchHinzufuegen(w) {                   // { symbol, name, art, boerse } – schon drauf → nichts
+  if (daten.watchlist.some(x => x.symbol === w.symbol)) return;
+  aendern({ op: 'watch+', id: neueId(), symbol: w.symbol, name: w.name, art: w.art || '', boerse: w.boerse || '' });
+  melden();
+}
+export function watchLoeschen(id) {
+  aendern({ op: 'watch-', id });
   melden();
 }
 

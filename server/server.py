@@ -26,9 +26,9 @@ prüft sie und startet sich mit dem neuen Code neu. Die Seiten im Browser merken
 
 Schnittstelle:
   GET  /api/daten[?warten=1] → { version, termine: { 'JJJJ-MM-TT': [{ id, zeit, text }] }, urlaube: [...], notizen,
-                              depot: [{ id, symbol, name, art, boerse, menge, einkauf }],
+                              depot: [{ id, symbol, name, art, boerse, menge, einkauf }], watchlist: [{ id, symbol, name, art, boerse }],
                               profil: { name, hub, ort: { name, info, lat, lon, bundesland } | null }, shortcuts: [{ id, name, url }],
-                              sicherheit: { pin, gesperrt, finanzen } }
+                              sicherheit: { pin, gesperrt, finanzen, finanzenStellen } }
                             Mit "If-None-Match" kommt 304 zurück, solange sich nichts geändert hat.
   POST /api/aenderungen   ← [{ op, ... }, ...] – alle Änderungen eines Geräts, der Reihe nach (siehe aendern()).
                           → { version, abgelehnt: [...] } – ungültige Änderungen werden übersprungen.
@@ -38,8 +38,8 @@ Schnittstelle:
   POST /api/update/modus  ← { modus: 'minuten' | 'taeglich' | 'aus' } – wie oft von selbst nach Updates gesehen wird
   POST /api/sicherheit    ← { aktion: 'pruefen' | 'pin-an' | 'pin-aus' | 'sperren' | 'entsperren'
                                      | 'finanzen-an' | 'finanzen-aus' | 'finanzen-pruefen', pin, neu, finanzPin }
-                          → { pin, gesperrt, finanzen } – PIN der Einstellungen, Sperre der Konfiguration und
-                            PIN der Finanzen (Einstellungen → Sicherheit)
+                          → { pin, gesperrt, finanzen, finanzenStellen } – PIN der Einstellungen, Sperre der Konfiguration und
+                            PIN der Finanzen samt seiner Länge (Einstellungen → Sicherheit)
   GET  /api/finanzen/suche?q=…           → [{ symbol, name, art, boerse }] – Aktien, ETFs und Fonds (Yahoo Finance)
   GET  /api/finanzen/kurse?symbole=A,B   → { A: { kurs, zeit, waehrung, name, ref: { tag, woche, monat, jahr, ytd },
                                                 eur: { kurs, ref } } | { fehler } } – ref = Schlusskurs zu Beginn des Zeitraums
@@ -114,6 +114,9 @@ db.executescript('''
   CREATE TABLE IF NOT EXISTS depot   (id TEXT PRIMARY KEY, symbol TEXT NOT NULL, name TEXT NOT NULL, art TEXT NOT NULL,
                                       boerse TEXT NOT NULL, menge TEXT NOT NULL, einkauf TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS shortcuts (id TEXT PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL);
+  -- Watchlist: Wertpapiere, die man nur beobachtet (ohne Stückzahl); von dort lassen sie sich ins Depot übernehmen
+  CREATE TABLE IF NOT EXISTS watchlist (id TEXT PRIMARY KEY, symbol TEXT NOT NULL, name TEXT NOT NULL, art TEXT NOT NULL,
+                                        boerse TEXT NOT NULL);
 ''')
 sperre = threading.Lock()                # eine Verbindung für alle Anfragen, immer nur eine gleichzeitig
 
@@ -155,9 +158,11 @@ def alles():
     urlaube = [{'id': i, 'text': t, 'von': v, 'bis': b} for i, t, v, b in db.execute('SELECT id, text, von, bis FROM urlaube ORDER BY rowid')]
     depot = [dict(zip(('id', 'symbol', 'name', 'art', 'boerse', 'menge', 'einkauf'), z))
              for z in db.execute('SELECT id, symbol, name, art, boerse, menge, einkauf FROM depot ORDER BY rowid')]
+    watchlist = [dict(zip(('id', 'symbol', 'name', 'art', 'boerse'), z))
+                 for z in db.execute('SELECT id, symbol, name, art, boerse FROM watchlist ORDER BY rowid')]
     shortcuts = [{'id': i, 'name': n, 'url': u} for i, n, u in db.execute('SELECT id, name, url FROM shortcuts ORDER BY rowid')]
     return {'version': version(), 'termine': termine, 'urlaube': urlaube, 'notizen': wert('notizen'), 'depot': depot,
-            'profil': profil(), 'shortcuts': shortcuts, 'sicherheit': sicherheit()}
+            'watchlist': watchlist, 'profil': profil(), 'shortcuts': shortcuts, 'sicherheit': sicherheit()}
 
 
 # Persönliche Angaben (Einstellungen → Persönliche Angaben / Intranet-Name): Name für die Begrüßung, Name des Intranets
@@ -196,13 +201,16 @@ def ort_pruefen(o):
 # Finanzen sichern (Wert 'finanz_pin'): eigener PIN mit 6 bis 12 Ziffern, ebenfalls nur als Hash. Ist er gesetzt,
 # zeigen die Geräte Gesamtwert und Positionsgrößen verschwommen, bis jemand mit diesem PIN entsperrt
 # ('finanzen-pruefen' – braucht den PIN der Einstellungen nicht). Ausschalten geht nur mit beiden PINs.
+# Die Länge dieses PINs (Wert 'finanz_pin_stellen') kennen die Geräte: Sie prüfen den PIN, sobald so viele Ziffern
+# eingegeben sind – ohne Bestätigen und ohne kürzere Eingaben als Fehlversuche zu zählen. Bei PINs von vor dieser
+# Änderung ist sie unbekannt (0), bis einmal richtig entsperrt wurde.
 PIN = re.compile(r'\d{5}')
 FIN_PIN = re.compile(r'\d{6,12}')
 PIN_VERSUCHE, PIN_PAUSE = 5, 300
 pin_fehler = []                          # Zeitpunkte der letzten falschen Eingaben (PIN der Einstellungen)
 fin_pin_fehler = []                      # dasselbe für den PIN der Finanzen
 AKTIONEN = ('pruefen', 'pin-an', 'pin-aus', 'sperren', 'entsperren', 'finanzen-an', 'finanzen-aus', 'finanzen-pruefen')
-KONFIGURATION = ('depot+', 'depot-', 'shortcut+', 'shortcut-')   # Änderungen, die die Sperre verhindert
+KONFIGURATION = ('depot+', 'depot-', 'watch+', 'watch-', 'shortcut+', 'shortcut-')   # Änderungen, die die Sperre verhindert
 
 
 class PinFalsch(Exception):
@@ -214,7 +222,9 @@ def gesperrt():
 
 
 def sicherheit():
-    return {'pin': bool(wert('pin')), 'gesperrt': gesperrt(), 'finanzen': bool(wert('finanz_pin'))}
+    fin = bool(wert('finanz_pin'))
+    return {'pin': bool(wert('pin')), 'gesperrt': gesperrt(), 'finanzen': fin,
+            'finanzenStellen': int(wert('finanz_pin_stellen', '0')) if fin else 0}
 
 
 def pin_hash(pin, salz):
@@ -252,7 +262,12 @@ def sicherheit_aendern(a):
     if aktion == 'finanzen-pruefen':          # Finanzen entsperren (auf der Seite, ohne die Einstellungen)
         if not fin_gespeichert:
             raise Ungueltig('Die Finanzen sind nicht gesichert')
-        return pin_pruefen(a.get('finanzPin'), fin_gespeichert, FIN_PIN, fin_pin_fehler)
+        pin_pruefen(a.get('finanzPin'), fin_gespeichert, FIN_PIN, fin_pin_fehler)
+        with sperre:                          # Länge eines älteren PINs nachtragen (siehe oben)
+            if wert('finanz_pin') == fin_gespeichert and wert('finanz_pin_stellen') != str(len(a['finanzPin'])):
+                setze('finanz_pin_stellen', len(a['finanzPin']))
+                setze('version', version() + 1)
+        return
     pin_pruefen(a.get('pin'), gespeichert)
     if aktion == 'finanzen-aus':
         pin_pruefen(a.get('finanzPin'), fin_gespeichert, FIN_PIN, fin_pin_fehler)
@@ -266,8 +281,9 @@ def sicherheit_aendern(a):
             db.execute("DELETE FROM werte WHERE name = 'pin'")
         elif aktion == 'finanzen-an':
             setze('finanz_pin', f'{salz.hex()}:{pin_hash(neu, salz)}')
+            setze('finanz_pin_stellen', len(neu))
         elif aktion == 'finanzen-aus':
-            db.execute("DELETE FROM werte WHERE name = 'finanz_pin'")
+            db.execute("DELETE FROM werte WHERE name IN ('finanz_pin', 'finanz_pin_stellen')")
         else:
             setze('konfig_gesperrt', '1' if aktion == 'sperren' else '0')
         setze('version', version() + 1)      # alle Geräte holen den neuen Stand
@@ -330,6 +346,15 @@ def aendern(a):
                    (text(a, 'id', 64), symbol, text(a, 'name', 200), text(a, 'art', 20), text(a, 'boerse', 60), menge, einkauf))
     elif op == 'depot-':
         db.execute('DELETE FROM depot WHERE id = ?', (text(a, 'id', 64),))
+    elif op == 'watch+':                  # Wertpapier auf die Watchlist (jedes Symbol nur einmal)
+        symbol = text(a, 'symbol', 24)
+        if not SYMBOL.fullmatch(symbol):
+            raise Ungueltig('symbol hat ein falsches Format')
+        if not db.execute('SELECT 1 FROM watchlist WHERE symbol = ?', (symbol,)).fetchone():
+            db.execute('INSERT OR IGNORE INTO watchlist (id, symbol, name, art, boerse) VALUES (?, ?, ?, ?, ?)',
+                       (text(a, 'id', 64), symbol, text(a, 'name', 200), text(a, 'art', 20), text(a, 'boerse', 60)))
+    elif op == 'watch-':
+        db.execute('DELETE FROM watchlist WHERE id = ?', (text(a, 'id', 64),))
     elif op == 'profil':                  # nur die mitgeschickten Felder ändern (letzte Änderung gewinnt)
         p = profil()
         if 'name' in a:

@@ -93,7 +93,7 @@
     <main class="ansicht">
       <div class="seiten" id="seiten">
 
-        <!-- Finanzen: links Summe und Diagramm (Gesamt oder das gewählte Asset), rechts die Reiter Hinzufügen und Assets (finanzen.js) -->
+        <!-- Finanzen: links Summe und Diagramm (Gesamt oder das gewählte Asset), rechts die Reiter Hinzufügen, Assets und Watchlist (finanzen.js) -->
         <section class="seite fin" aria-label="Finanzen">
           <div class="fin-links">
             <section class="karte depot-summe">
@@ -119,9 +119,13 @@
             <div class="tabs fin-tabs">
               <button id="finTabNeu"><span id="finTitel">Hinzufügen</span></button>
               <button id="finTabAssets">Assets <small id="depotAnzahl"></small></button>
+              <button id="finTabWatch">Watchlist <small id="watchAnzahl"></small></button>
             </div>
             <div class="fin-reiter" id="finAssets">
               <div class="depot-liste" id="depotListe"></div>
+            </div>
+            <div class="fin-reiter" id="finWatch" hidden>
+              <div class="depot-liste" id="watchListe"></div>
             </div>
             <div class="fin-reiter" id="finNeu" hidden>
               <form class="suche" id="finSuche" role="search">
@@ -145,6 +149,7 @@
                 <p class="fin-fehler" id="finFehler"></p>
                 <div class="fin-knoepfe">
                   <button type="button" id="finAbbrechen">Abbrechen</button>
+                  <button type="button" id="finZurWatch">Auf die Watchlist</button>
                   <button type="submit" class="primary" id="finOk">Zum Depot hinzufügen</button>
                 </div>
               </form>

@@ -491,13 +491,19 @@ button.sp-zeile:active { background: #2e3f63; }
 .pos-kurs b.ab { animation: kurs-ab 1.4s ease-out; }         /* Kurs gefallen: kurz rot */
 @keyframes kurs-auf { from { color: var(--plus); } }
 @keyframes kurs-ab { from { color: var(--minus); } }
-.pos-knoepfe { display: flex; gap: 4px; }
-.pos-knoepfe button { width: 34px; height: 34px; min-height: 0; padding: 0; display: grid; place-items: center; color: var(--muted); }
-.pos-knoepfe svg { width: 16px; height: 16px; }
-@media (hover: hover) { .pos-knoepfe .weg:hover { color: var(--minus); border-color: rgba(248,113,113,.5); } }
+:is(.pos-knoepfe, .watch-knoepfe) { display: flex; gap: 4px; }
+:is(.pos-knoepfe, .watch-knoepfe) button { width: 34px; height: 34px; min-height: 0; padding: 0; display: grid; place-items: center; color: var(--muted); }
+:is(.pos-knoepfe, .watch-knoepfe) svg { width: 16px; height: 16px; }
+@media (hover: hover) { :is(.pos-knoepfe, .watch-knoepfe) .weg:hover { color: var(--minus); border-color: rgba(248,113,113,.5); } }
+/* Watchlist: Name | Kurs mit heutiger Entwicklung | „Ins Depot“ und Entfernen */
+.pos.watch { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; cursor: default; }
+.watch-knoepfe .ins-depot { width: auto; display: inline-flex; gap: 6px; padding: 0 10px; font-size: 13px; color: var(--accent-hell); }
+.watch-knoepfe .ins-depot svg { width: 14px; height: 14px; }
 @container (max-width: 420px) {        /* schmale Spalte: Kurs weglassen (steht im Tooltip und links im Diagramm) */
   .pos { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto; gap: 10px; }
   .pos-kurs { display: none; }
+  .pos.watch .pos-kurs { display: block; }   /* Watchlist: der Kurs ist das Wichtigste */
+  .watch-knoepfe .ins-depot { font-size: 12px; padding: 0 8px; }
 }
 
 /* Suchen und hinzufügen */
@@ -609,7 +615,7 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .wetter-tage > .empty { grid-column: 1 / -1; align-self: center; text-align: center; }
 
 /* Einstellungen → Sicherheit → Konfiguration gesperrt (sicherheit.js): alles zum Einrichten ausblenden */
-.konfig-gesperrt :is(#finTabNeu, .pos-knoepfe, #scNeu, #scBearbeiten, #spAbmelden, #spSchritte) { display: none !important; }
+.konfig-gesperrt :is(#finTabNeu, .pos-knoepfe, .watch-knoepfe, #scNeu, #scBearbeiten, #spAbmelden, #spSchritte) { display: none !important; }
 
 /* Einstellungen → Sicherheit → Finanzen sichern (sicherheit.js): Beträge verschwommen, bis mit dem PIN entsperrt.
    Ändern/Entfernen ausgeblendet, sonst stünde die Stückzahl im Formular. */
