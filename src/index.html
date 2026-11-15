@@ -93,15 +93,15 @@
     <main class="ansicht">
       <div class="seiten" id="seiten">
 
-        <!-- Finanzen: links Summe und Diagramm (Gesamt oder das gewählte Asset), rechts die Reiter Hinzufügen, Assets und Watchlist (finanzen.js) -->
+        <!-- Finanzen: links Summe und Diagramm (Gesamt, das gewählte Asset oder Wertpapier der Watchlist), rechts die Reiter Hinzufügen, Assets und Watchlist (finanzen.js) -->
         <section class="seite fin" aria-label="Finanzen">
           <div class="fin-links">
             <section class="karte depot-summe">
               <div class="karte-kopf"><h3 id="depotTitel">Mein Depot</h3><small id="depotStand"></small>
                 <button class="fin-schloss" id="finSchloss" hidden></button></div>
               <div class="ds-zahlen" id="depotZahlen">
-                <div><small>Gesamtwert</small><b id="depotWert">–</b></div>
-                <div><small>Gewinn / Verlust seit Kauf</small><b id="depotGewinn">–</b><span id="depotGewinnProz"></span></div>
+                <div><small id="dsWertText">Gesamtwert</small><b id="depotWert">–</b></div>
+                <div><small id="dsGewinnText">Gewinn / Verlust seit Kauf</small><b id="depotGewinn">–</b><span id="depotGewinnProz"></span></div>
               </div>
             </section>
             <section class="karte chart-karte">

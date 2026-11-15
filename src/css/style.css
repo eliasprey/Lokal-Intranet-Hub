@@ -496,7 +496,7 @@ button.sp-zeile:active { background: #2e3f63; }
 :is(.pos-knoepfe, .watch-knoepfe) svg { width: 16px; height: 16px; }
 @media (hover: hover) { :is(.pos-knoepfe, .watch-knoepfe) .weg:hover { color: var(--minus); border-color: rgba(248,113,113,.5); } }
 /* Watchlist: Name | Kurs mit heutiger Entwicklung | „Ins Depot“ und Entfernen */
-.pos.watch { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; cursor: default; }
+.pos.watch { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; }
 .watch-knoepfe .ins-depot { width: auto; display: inline-flex; gap: 6px; padding: 0 10px; font-size: 13px; color: var(--accent-hell); }
 .watch-knoepfe .ins-depot svg { width: 14px; height: 14px; }
 @container (max-width: 420px) {        /* schmale Spalte: Kurs weglassen (steht im Tooltip und links im Diagramm) */
@@ -624,6 +624,10 @@ form.es-reiter { padding-top: 16px; border-top: 1px solid var(--rand); }
 .finanzen-verdeckt .gesamt-ansicht :is(#chart, #chartAenderung) {
   filter: blur(9px); user-select: none; -webkit-user-select: none; pointer-events: none; }
 .finanzen-verdeckt #depotZahlen { cursor: pointer; }
+/* Watchlist (Kurs und heute) und ein dort gewähltes Wertpapier oben links: keine Beträge des Depots → nicht verdecken */
+.finanzen-verdeckt .watch .pos-kurs small,
+.finanzen-verdeckt .watch-ansicht :is(#depotWert, #depotGewinn) { filter: none; user-select: auto; -webkit-user-select: auto; pointer-events: auto; }
+.finanzen-verdeckt .watch-ansicht #depotZahlen { cursor: auto; }
 .finanzen-verdeckt .pos-knoepfe { display: none; }
 .depot-summe .karte-kopf small { margin-left: auto; }
 .fin-schloss { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 0; padding: 4px 10px; font-size: 12px; color: var(--muted); }

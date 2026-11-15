@@ -93,7 +93,7 @@ wird herausgerechnet. Die Wahl gilt nur für dieses Gerät (sie liegt im Browser
   steht (ohne Ort nur die bundesweiten). Werden für jedes Jahr selbst berechnet, auch die beweglichen rund um Ostern
   und der Buß- und Bettag; in Augsburg kommt das Friedensfest dazu.
 - **Seiten** (`seiten.js`): Blättert zwischen Finanzen, Kalender, Dashboard, Shortcuts und Smarthome – über das Menü, die Pfeile,
-  die Pfeiltasten oder Wischen (die Seite folgt dem Finger).
+  die Pfeiltasten oder Wischen (die Seite folgt dem Finger). Nach 5 Minuten ohne Eingabe geht es zurück zum Dashboard.
 - **Kalender** (`kalender.js`): Große Monatsansicht auf eigener Seite mit Kalenderwochen, Feiertagen
   und den Terminen aus Google Kalender. Nur zum Anzeigen – Termine werden in Google angelegt und geändert;
   der Knopf **Kalender** öffnet dafür Google Kalender. Ein Klick auf einen Tag öffnet rechts die **Tagesansicht**
@@ -102,12 +102,14 @@ wird herausgerechnet. Die Wahl gilt nur für dieses Gerät (sie liegt im Browser
 - **Google Kalender** (`google.js`, Abruf in `server.py`): Termine aus den eigenen Google Kalendern erscheinen
   lila im Kalender und unter „Nächste 7 Tage“ (nur anzeigen – ändern weiter in Google). Einrichtung siehe unten.
 - **Nächste 7 Tage** (`kalender.js`): Dashboard-Karte mit allem, was von heute bis in 6 Tagen ansteht.
-- **Finanzen** (`finanzen.js`, Diagramm in `diagramm.js`, Kurse über `server.py`): Rechts zwei Reiter.
+- **Finanzen** (`finanzen.js`, Diagramm in `diagramm.js`, Kurse über `server.py`): Rechts drei Reiter.
   Unter **Hinzufügen** nach Aktien, ETFs, Fonds oder Kryptos suchen (Name, Börsenkürzel, ISIN oder z. B. „Bitcoin“ –
   WKN kennt Yahoo nicht), einen Treffer antippen, Stückzahl (bis 8 Nachkommastellen) und optional den Einkaufskurs pro
   Stück in Euro eintragen. Unter **Assets** steht oben „Gesamt“, darunter jede Position mit aktuellem Kurs (alle
   5 Sekunden neu, leuchtet beim Steigen grün und beim Fallen rot auf), Wert und Gewinn. Stift = Stückzahl/Einkaufskurs
-  ändern, Mülleimer = entfernen.
+  ändern, Mülleimer = entfernen. Auf die **Watchlist** kommen Wertpapiere, die man nur beobachtet (im Formular
+  „Auf die Watchlist“): mit aktuellem Kurs und heutiger Entwicklung. Antippen zeigt Kurs und Diagramm links,
+  „Ins Depot“ öffnet das Formular für Stückzahl und Einkaufskurs und nimmt das Wertpapier danach von der Watchlist.
   Was unter Assets gewählt ist (Gesamt oder ein einzelnes Asset), zeigt die linke Seite: oben der **Gesamtwert** und
   der **Gewinn/Verlust seit dem Kauf** in Euro und Prozent (aktueller Wert − Einkaufskurs × Stückzahl, bezogen auf den
   Einkaufswert; nur Positionen mit Einkaufskurs). Beispiel: A 100 × 10 € → jetzt 15 €, B 50 × 10 € → jetzt 5 €:
@@ -154,7 +156,8 @@ wird herausgerechnet. Die Wahl gilt nur für dieses Gerät (sie liegt im Browser
     **Finanzen sichern** – eigener PIN mit 6 bis 12 Ziffern (auch nur als Hash auf dem Server). Danach sind auf der
     Seite Finanzen Gesamtwert, Gewinn in Euro, das Diagramm des ganzen Depots und bei jedem Asset Stückzahl und
     Positionswert verschwommen. Über „Entsperren“ (oder Tippen auf die Zahlen) und den PIN werden sie auf diesem
-    Gerät sichtbar – bis eine Minute lang nichts getan wird (dann geht es auch zurück zum Dashboard). Ausschalten
+    Gerät sichtbar – bis 5 Minuten lang nichts getan wird (eigene Uhr, unabhängig von der Rückkehr zum Dashboard).
+    Die Eingabe braucht kein OK: Sobald der PIN vollständig ist, wird er geprüft. Ausschalten
     geht nur mit dem PIN der Finanzen. Das ist ein Sichtschutz: Die Zahlen kommen weiterhin vom Server.
   Alles davon liegt in der Datenbank und gilt auf allen Geräten.
 - **Tablet** (`main.js`): Große Tippflächen, Seitenwechsel durch Wischen. Nach dem Sperren und

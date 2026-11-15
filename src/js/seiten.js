@@ -3,7 +3,7 @@
 import { $, zoom } from './hilfen.js';
 
 const START = 2;                         // die mittlere Seite (Dashboard) ist die Startseite
-const RUECKKEHR_MS = 60_000;             // so lange ohne Eingabe, dann zurück zur Startseite
+const RUECKKEHR_MS = 5 * 60_000;         // so lange ohne Eingabe, dann zurück zur Startseite
 
 export function starteSeiten() {
   const leiste = $('seiten'), seiten = [...leiste.children];
@@ -43,7 +43,7 @@ export function starteSeiten() {
     else if (e.key === 'ArrowRight') zeige(aktuell + 1);
   });
 
-  /* Nach einer Minute ohne Eingabe zurück zum Dashboard – außer ein Fenster ist offen, dann weiter warten */
+  /* Nach 5 Minuten ohne Eingabe zurück zum Dashboard – außer ein Fenster ist offen, dann weiter warten */
   let ruhe;
   const ruheNeu = () => { clearTimeout(ruhe); ruhe = setTimeout(zurueck, RUECKKEHR_MS); };
   function zurueck() {
